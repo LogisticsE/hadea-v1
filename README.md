@@ -48,8 +48,8 @@ A comprehensive web application for managing laboratory sample kit shipments, fr
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
-cd sklms
+git clone https://github.com/LogisticsE/hadea-v1.git
+cd hadea-v1
 ```
 
 ### 2. Install dependencies
