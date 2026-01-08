@@ -1,0 +1,524 @@
+// Prisma Schema for Sample Kit Logistics Management System (SKLMS)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ENUMS
+// ═══════════════════════════════════════════════════════════════════
+
+enum OrderStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  OUTBOUND_PREPARING
+  OUTBOUND_SHIPPED
+  OUTBOUND_DELIVERED
+  SAMPLING_IN_PROGRESS
+  SAMPLE_PREPARING
+  SAMPLE_SHIPPED
+  SAMPLE_DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum ShipmentType {
+  OUTBOUND
+  SAMPLE
+}
+
+enum ShipmentStatus {
+  PENDING
+  LABEL_CREATED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  EXCEPTION
+  CANCELLED
+}
+
+enum CarrierType {
+  UPS
+  DHL
+}
+
+enum DocumentType {
+  BOX_CONTENT_LABEL_OUTBOUND
+  BOX_CONTENT_LABEL_SAMPLE
+  NON_ADR_DECLARATION
+  SHIPPING_LABEL_OUTBOUND
+  SHIPPING_LABEL_SAMPLE
+  PACKING_LIST
+  COMMERCIAL_INVOICE
+  PROOF_OF_DELIVERY_OUTBOUND
+  PROOF_OF_DELIVERY_SAMPLE
+}
+
+enum StockMovementType {
+  ADJUSTMENT
+  ORDER_ALLOCATION
+  ORDER_CANCELLATION
+  RECEIPT
+  MANUAL_DECREASE
+  MANUAL_INCREASE
+}
+
+enum UserRole {
+  ADMIN
+  OPERATIONS_MANAGER
+  WAREHOUSE_OPERATOR
+  VIEWER
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// USERS & AUTHENTICATION
+// ═══════════════════════════════════════════════════════════════════
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  passwordHash  String    @map("password_hash")
+  role          UserRole  @default(VIEWER)
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  approvedOrders   Order[]         @relation("ApprovedBy")
+  stockMovements   StockMovement[]
+  
+  @@map("users")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SITES
+// ═══════════════════════════════════════════════════════════════════
+
+model Site {
+  id            String    @id @default(cuid())
+  name          String
+  code          String    @unique
+  
+  // Address
+  addressLine1  String    @map("address_line1")
+  addressLine2  String?   @map("address_line2")
+  city          String
+  stateProvince String?   @map("state_province")
+  postalCode    String    @map("postal_code")
+  countryCode   String    @map("country_code")
+  countryName   String    @map("country_name")
+  
+  // Classification
+  isEU          Boolean   @default(true) @map("is_eu")
+  isActive      Boolean   @default(true) @map("is_active")
+  notes         String?   @db.Text
+  
+  // Timestamps
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  contacts      SiteContact[]
+  orders        Order[]
+  
+  @@index([code])
+  @@index([countryCode])
+  @@index([isActive])
+  @@map("sites")
+}
+
+model SiteContact {
+  id          String    @id @default(cuid())
+  siteId      String    @map("site_id")
+  name        String
+  email       String
+  phone       String?
+  department  String?
+  isPrimary   Boolean   @default(false) @map("is_primary")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  site        Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  orders      Order[]   @relation("SiteContactOrders")
+  
+  @@index([siteId])
+  @@map("site_contacts")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LABORATORIES
+// ═══════════════════════════════════════════════════════════════════
+
+model Lab {
+  id            String    @id @default(cuid())
+  name          String
+  code          String    @unique
+  
+  // Address
+  addressLine1  String    @map("address_line1")
+  addressLine2  String?   @map("address_line2")
+  city          String
+  stateProvince String?   @map("state_province")
+  postalCode    String    @map("postal_code")
+  countryCode   String    @map("country_code")
+  countryName   String    @map("country_name")
+  
+  // Classification
+  isEU          Boolean   @default(true) @map("is_eu")
+  isActive      Boolean   @default(true) @map("is_active")
+  notes         String?   @db.Text
+  
+  // Timestamps
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  contacts      LabContact[]
+  orders        Order[]
+  
+  @@index([code])
+  @@index([isActive])
+  @@map("labs")
+}
+
+model LabContact {
+  id          String    @id @default(cuid())
+  labId       String    @map("lab_id")
+  name        String
+  email       String
+  phone       String?
+  department  String?
+  isPrimary   Boolean   @default(false) @map("is_primary")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  lab         Lab       @relation(fields: [labId], references: [id], onDelete: Cascade)
+  orders      Order[]   @relation("LabContactOrders")
+  
+  @@index([labId])
+  @@map("lab_contacts")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// KITS & STOCK
+// ═══════════════════════════════════════════════════════════════════
+
+model Kit {
+  id            String    @id @default(cuid())
+  name          String
+  code          String    @unique
+  description   String?   @db.Text
+  
+  // Dimensions (for shipping)
+  totalWeight   Float     @map("total_weight")
+  length        Float
+  width         Float
+  height        Float
+  
+  // Status
+  isActive      Boolean   @default(true) @map("is_active")
+  
+  // Timestamps
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  items         KitItem[]
+  orders        Order[]
+  
+  @@index([code])
+  @@index([isActive])
+  @@map("kits")
+}
+
+model StockItem {
+  id              String    @id @default(cuid())
+  name            String
+  sku             String    @unique
+  description     String?   @db.Text
+  
+  // Inventory
+  quantity        Int       @default(0)
+  minStockLevel   Int       @default(0) @map("min_stock_level")
+  
+  // Pricing (for commercial invoice)
+  unitPrice       Float     @map("unit_price")
+  currency        String    @default("EUR")
+  
+  // Physical properties
+  unitWeight      Float     @map("unit_weight")
+  length          Float?
+  width           Float?
+  height          Float?
+  
+  // Status
+  isActive        Boolean   @default(true) @map("is_active")
+  
+  // Timestamps
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  kitItems        KitItem[]
+  movements       StockMovement[]
+  
+  @@index([sku])
+  @@index([quantity, minStockLevel])
+  @@map("stock_items")
+}
+
+model KitItem {
+  id            String    @id @default(cuid())
+  kitId         String    @map("kit_id")
+  stockItemId   String    @map("stock_item_id")
+  quantity      Int       @default(1)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  
+  // Relations
+  kit           Kit       @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  stockItem     StockItem @relation(fields: [stockItemId], references: [id])
+  
+  @@unique([kitId, stockItemId])
+  @@map("kit_items")
+}
+
+model StockMovement {
+  id              String            @id @default(cuid())
+  stockItemId     String            @map("stock_item_id")
+  orderId         String?           @map("order_id")
+  quantityChange  Int               @map("quantity_change")
+  movementType    StockMovementType @map("movement_type")
+  notes           String?           @db.Text
+  
+  // Audit
+  createdAt       DateTime          @default(now()) @map("created_at")
+  createdById     String?           @map("created_by_id")
+  
+  // Relations
+  stockItem       StockItem         @relation(fields: [stockItemId], references: [id])
+  order           Order?            @relation(fields: [orderId], references: [id])
+  createdBy       User?             @relation(fields: [createdById], references: [id])
+  
+  @@index([stockItemId])
+  @@index([orderId])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ORDERS
+// ═══════════════════════════════════════════════════════════════════
+
+model Order {
+  id                String        @id @default(cuid())
+  orderNumber       String        @unique @map("order_number")
+  
+  // References
+  siteId            String        @map("site_id")
+  labId             String        @map("lab_id")
+  kitId             String        @map("kit_id")
+  siteContactId     String        @map("site_contact_id")
+  labContactId      String        @map("lab_contact_id")
+  
+  // Order details
+  quantity          Int           @default(1)
+  status            OrderStatus   @default(DRAFT)
+  
+  // Key dates
+  samplingDate      DateTime      @map("sampling_date")
+  outboundShipDate  DateTime      @map("outbound_ship_date")
+  
+  // Carrier selection
+  outboundCarrier   CarrierType   @map("outbound_carrier")
+  sampleCarrier     CarrierType   @map("sample_carrier")
+  
+  // Customs
+  requiresCustomsDocs Boolean     @default(false) @map("requires_customs_docs")
+  
+  // Approval
+  approvedAt        DateTime?     @map("approved_at")
+  approvedById      String?       @map("approved_by_id")
+  
+  // Notes
+  notes             String?       @db.Text
+  
+  // Timestamps
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  
+  // Relations
+  site              Site          @relation(fields: [siteId], references: [id])
+  lab               Lab           @relation(fields: [labId], references: [id])
+  kit               Kit           @relation(fields: [kitId], references: [id])
+  siteContact       SiteContact   @relation("SiteContactOrders", fields: [siteContactId], references: [id])
+  labContact        LabContact    @relation("LabContactOrders", fields: [labContactId], references: [id])
+  approvedBy        User?         @relation("ApprovedBy", fields: [approvedById], references: [id])
+  
+  shipments         Shipment[]
+  documents         Document[]
+  stockMovements    StockMovement[]
+  
+  @@index([status])
+  @@index([samplingDate])
+  @@index([outboundShipDate])
+  @@index([siteId])
+  @@index([labId])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SHIPMENTS
+// ═══════════════════════════════════════════════════════════════════
+
+model Shipment {
+  id                    String          @id @default(cuid())
+  orderId               String          @map("order_id")
+  type                  ShipmentType
+  carrier               CarrierType
+  status                ShipmentStatus  @default(PENDING)
+  
+  // Tracking
+  trackingNumber        String?         @map("tracking_number")
+  waybillNumber         String?         @map("waybill_number")
+  
+  // Dates
+  scheduledShipDate     DateTime        @map("scheduled_ship_date")
+  expectedDeliveryDate  DateTime?       @map("expected_delivery_date")
+  actualShipDate        DateTime?       @map("actual_ship_date")
+  actualDeliveryDate    DateTime?       @map("actual_delivery_date")
+  
+  // Proof of Delivery
+  podRetrieved          Boolean         @default(false) @map("pod_retrieved")
+  podRetrievedAt        DateTime?       @map("pod_retrieved_at")
+  podSignedBy           String?         @map("pod_signed_by")
+  
+  // Carrier response data
+  carrierResponseJson   Json?           @map("carrier_response_json")
+  
+  // Timestamps
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  
+  // Relations
+  order                 Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  documents             Document[]
+  trackingEvents        TrackingEvent[]
+  
+  @@unique([orderId, type])
+  @@index([trackingNumber])
+  @@index([status])
+  @@index([scheduledShipDate])
+  @@map("shipments")
+}
+
+model TrackingEvent {
+  id                String    @id @default(cuid())
+  shipmentId        String    @map("shipment_id")
+  eventCode         String    @map("event_code")
+  eventDescription  String    @map("event_description")
+  location          String?
+  eventDate         DateTime  @map("event_date")
+  rawData           Json?     @map("raw_data")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  
+  // Relations
+  shipment          Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  
+  @@index([shipmentId])
+  @@index([eventDate])
+  @@map("tracking_events")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DOCUMENTS
+// ═══════════════════════════════════════════════════════════════════
+
+model Document {
+  id            String        @id @default(cuid())
+  orderId       String        @map("order_id")
+  shipmentId    String?       @map("shipment_id")
+  type          DocumentType
+  fileName      String        @map("file_name")
+  filePath      String        @map("file_path")
+  fileType      String        @map("file_type")
+  fileSize      Int           @map("file_size")
+  generatedAt   DateTime      @default(now()) @map("generated_at")
+  
+  // Relations
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shipment      Shipment?     @relation(fields: [shipmentId], references: [id])
+  
+  @@index([orderId])
+  @@index([orderId, type])
+  @@map("documents")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════
+
+model Setting {
+  id        String    @id @default(cuid())
+  key       String    @unique
+  value     String    @db.Text
+  category  String    @default("general")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  
+  @@index([category])
+  @@map("settings")
+}
+
+model CarrierConfig {
+  id            String        @id @default(cuid())
+  carrier       CarrierType
+  shipmentType  ShipmentType  @map("shipment_type")
+  configJson    Json          @map("config_json")
+  isActive      Boolean       @default(true) @map("is_active")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  
+  @@unique([carrier, shipmentType])
+  @@map("carrier_configs")
+}
+
+model DocumentTemplate {
+  id            String        @id @default(cuid())
+  name          String
+  type          DocumentType
+  filePath      String        @map("file_path")
+  configJson    Json?         @map("config_json")
+  isActive      Boolean       @default(true) @map("is_active")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  
+  @@index([type])
+  @@map("document_templates")
+}
+
+model HadeaConfig {
+  id                        String    @id @default(cuid())
+  contractingAuthorityName  String    @map("contracting_authority_name")
+  contractorName            String    @map("contractor_name")
+  specificContractNumber    String    @map("specific_contract_number")
+  specificContractDate      DateTime  @map("specific_contract_date")
+  shippingAddress           String?   @map("shipping_address") @db.Text
+  isActive                  Boolean   @default(true) @map("is_active")
+  createdAt                 DateTime  @default(now()) @map("created_at")
+  updatedAt                 DateTime  @updatedAt @map("updated_at")
+  
+  @@map("hadea_configs")
+}

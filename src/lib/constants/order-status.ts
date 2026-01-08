@@ -1,0 +1,44 @@
+export const ORDER_STATUS = {
+  DRAFT: 'DRAFT',
+  PENDING_APPROVAL: 'PENDING_APPROVAL',
+  APPROVED: 'APPROVED',
+  OUTBOUND_PREPARING: 'OUTBOUND_PREPARING',
+  OUTBOUND_SHIPPED: 'OUTBOUND_SHIPPED',
+  OUTBOUND_DELIVERED: 'OUTBOUND_DELIVERED',
+  SAMPLING_IN_PROGRESS: 'SAMPLING_IN_PROGRESS',
+  SAMPLE_PREPARING: 'SAMPLE_PREPARING',
+  SAMPLE_SHIPPED: 'SAMPLE_SHIPPED',
+  SAMPLE_DELIVERED: 'SAMPLE_DELIVERED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Draft',
+  PENDING_APPROVAL: 'Pending Approval',
+  APPROVED: 'Approved',
+  OUTBOUND_PREPARING: 'Outbound Preparing',
+  OUTBOUND_SHIPPED: 'Outbound Shipped',
+  OUTBOUND_DELIVERED: 'Outbound Delivered',
+  SAMPLING_IN_PROGRESS: 'Sampling In Progress',
+  SAMPLE_PREPARING: 'Sample Preparing',
+  SAMPLE_SHIPPED: 'Sample Shipped',
+  SAMPLE_DELIVERED: 'Sample Delivered',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
+};
+
+export const ORDER_STATUS_COLORS: Record<string, string> = {
+  DRAFT: 'gray',
+  PENDING_APPROVAL: 'yellow',
+  APPROVED: 'blue',
+  OUTBOUND_PREPARING: 'purple',
+  OUTBOUND_SHIPPED: 'indigo',
+  OUTBOUND_DELIVERED: 'cyan',
+  SAMPLING_IN_PROGRESS: 'teal',
+  SAMPLE_PREPARING: 'emerald',
+  SAMPLE_SHIPPED: 'green',
+  SAMPLE_DELIVERED: 'lime',
+  COMPLETED: 'green',
+  CANCELLED: 'red',
+};
