@@ -97,5 +97,5 @@ jobs:
           app-name: 'hadea-orderentry'
           slot-name: 'Production'
           package: .
-          startup-command: 'npm start'
+          startup-command: 'npx next start'
           
