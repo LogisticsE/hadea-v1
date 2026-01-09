@@ -89,5 +89,5 @@ jobs:
           app-name: 'hadea-orderentry'
           slot-name: 'Production'
           package: .
-          startup-command: 'npx prisma generate && node .next/standalone/server.js'
+          startup-command: 'cd .next/standalone && npx prisma generate && node server.js'
           
