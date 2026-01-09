@@ -39,14 +39,33 @@ jobs:
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
 
+      - name: Verify standalone build exists
+        run: |
+          if [ ! -d ".next/standalone" ]; then
+            echo "ERROR: .next/standalone directory not found!"
+            echo "Build output:"
+            ls -la .next/ || echo ".next directory not found"
+            exit 1
+          fi
+          echo "Standalone build verified:"
+          ls -la .next/standalone/
+
       - name: Run tests
         run: npm run test --if-present
+
+      - name: Verify standalone build
+        run: |
+          ls -la .next/standalone || echo "Standalone build not found!"
+          ls -la .next/standalone/server.js || echo "Server.js not found!"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: |
+            .
+            !node_modules
+            !.next/cache
 
   deploy:
     runs-on: ubuntu-latest
@@ -70,6 +89,11 @@ jobs:
       - name: Install dependencies (including Prisma)
         run: npm ci --include=dev
 
+      - name: Verify Prisma installation
+        run: |
+          npx prisma --version || echo "Prisma not found"
+          ls -la node_modules/prisma || echo "Prisma module not found"
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -82,6 +106,22 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
+      - name: Verify files before deployment
+        run: |
+          echo "Checking for .next/standalone..."
+          if [ -d ".next/standalone" ]; then
+            echo "✓ Standalone directory exists"
+            ls -la .next/standalone/
+          else
+            echo "✗ WARNING: .next/standalone not found!"
+            echo "Contents of .next:"
+            ls -la .next/ || echo ".next directory not found"
+          fi
+          echo "Checking for package.json..."
+          ls -la package.json
+          echo "Checking for prisma in package.json..."
+          grep -q '"prisma"' package.json && echo "✓ Prisma in package.json" || echo "✗ Prisma not in package.json"
+
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
@@ -89,5 +129,5 @@ jobs:
           app-name: 'hadea-orderentry'
           slot-name: 'Production'
           package: .
-          startup-command: 'cd .next/standalone && npx prisma generate && node server.js'
+          startup-command: 'npx prisma generate && npm start'
           

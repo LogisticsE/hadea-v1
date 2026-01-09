@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone', // Required for Azure App Service
+  // Note: standalone mode disabled for Azure compatibility
+  // Azure Oryx build system handles the deployment differently
   images: {
     domains: ['localhost'],
   },
