@@ -42,21 +42,20 @@ jobs:
       - name: Run tests
         run: npm run test --if-present
 
-      - name: Prepare deployment package
-        run: |
-          # Create deployment directory
-          mkdir -p deploy-package
-          # Copy necessary files (exclude node_modules, .next/cache, etc.)
-          cp -r src prisma public package.json package-lock.json tsconfig.json next.config.js tailwind.config.js postcss.config.js deploy-package/
-          cp -r .next deploy-package/ 2>/dev/null || true
-          # Copy .gitignore to maintain structure
-          cp .gitignore deploy-package/ 2>/dev/null || true
-
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: deploy-package
+          path: .
+          exclude-paths: |
+            node_modules
+            .next/cache
+            .git
+            .github
+            *.log
+            .env*
+            coverage
+            .DS_Store
 
   deploy:
     runs-on: ubuntu-latest
@@ -79,7 +78,7 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_398780543A9E42F69D0A2FC1897DAC21 }}
 
       - name: Wait for SCM to be ready
-        run: sleep 10
+        run: sleep 15
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
@@ -88,6 +87,7 @@ jobs:
           app-name: 'hadea-orderentry'
           slot-name: 'Production'
           package: .
-          startup-command: 'npm install && npm run db:generate && npm start'
-          scm-do-build-during-deployment: true
+          startup-command: 'npm install --production=false && npm run db:generate && npm start'
+          scm-do-build-during-deployment: false
+          deployment-method: 'auto'
           
