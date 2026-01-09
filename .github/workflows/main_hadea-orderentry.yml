@@ -43,10 +43,10 @@ jobs:
         run: |
           echo "Build output:"
           ls -la .next/ || echo ".next directory not found"
-          if [ -f ".next/server.js" ]; then
-            echo "✓ Standard Next.js build successful"
+          if [ -d ".next/server" ] && [ -d ".next/static" ]; then
+            echo "✓ Next.js build successful (server and static directories found)"
           else
-            echo "✗ Build output not found"
+            echo "✗ Build output incomplete"
             exit 1
           fi
 
@@ -108,11 +108,11 @@ jobs:
 
       - name: Verify files before deployment
         run: |
-          echo "Checking for .next/server.js..."
-          if [ -f ".next/server.js" ]; then
-            echo "✓ Next.js server file exists"
+          echo "Checking for .next/server directory..."
+          if [ -d ".next/server" ]; then
+            echo "✓ Next.js server directory exists"
           else
-            echo "✗ WARNING: .next/server.js not found!"
+            echo "✗ WARNING: .next/server not found!"
             echo "Contents of .next:"
             ls -la .next/ || echo ".next directory not found"
           fi
