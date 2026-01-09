@@ -46,19 +46,20 @@ jobs:
         run: |
           # Create a clean deployment directory
           mkdir -p deploy-package
-          # Copy only what we need (exclude node_modules, .git, etc.)
+          # Copy source code and config files
           cp -r src prisma public package.json package-lock.json tsconfig.json next.config.js tailwind.config.js postcss.config.js deploy-package/ 2>/dev/null || true
-          # Copy .next build output (but not cache)
+          # Copy entire .next directory (excluding cache)
           if [ -d ".next" ]; then
-            mkdir -p deploy-package/.next
-            cp -r .next/standalone deploy-package/.next/ 2>/dev/null || true
-            cp -r .next/static deploy-package/.next/ 2>/dev/null || true
-            cp -r .next/server deploy-package/.next/ 2>/dev/null || true
-            cp .next/BUILD_ID deploy-package/.next/ 2>/dev/null || true
-            cp .next/package.json deploy-package/.next/ 2>/dev/null || true
+            cp -r .next deploy-package/ 2>/dev/null || true
+            # Remove cache if it exists
+            rm -rf deploy-package/.next/cache 2>/dev/null || true
           fi
+          echo "Deployment package contents:"
+          ls -la deploy-package/
           echo "Deployment package size:"
           du -sh deploy-package
+          echo ".next directory contents:"
+          ls -la deploy-package/.next/ 2>/dev/null || echo ".next not found"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
