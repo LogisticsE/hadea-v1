@@ -128,5 +128,5 @@ jobs:
           app-name: 'hadea-orderentry'
           slot-name: 'Production'
           package: .
-          startup-command: 'npx prisma generate && npm start'
+          startup-command: 'npm run db:generate && npm start'
           
