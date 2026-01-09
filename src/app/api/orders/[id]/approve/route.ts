@@ -37,7 +37,7 @@ export async function POST(
     }
 
     // Check stock availability
-    const stockDeductions = [];
+    const stockDeductions: Array<{ itemId: string; quantity: number }> = [];
     for (const kitItem of order.kit.items) {
       const requiredQuantity = kitItem.quantity * order.quantity;
       if (kitItem.stockItem.quantity < requiredQuantity) {
