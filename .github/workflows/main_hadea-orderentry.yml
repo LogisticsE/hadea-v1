@@ -19,53 +19,21 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Node.js version
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
-          node-version: '20.x'
-          cache: 'npm'
+          node-version: '22.x'
 
-      - name: npm install
-        run: npm ci
-
-      - name: Generate Prisma Client
-        run: npx prisma generate
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-      - name: Build application
-        run: npm run build
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-
-      - name: Verify build output
+      - name: npm install, build, and test
         run: |
-          echo "Build output:"
-          ls -la .next/ || echo ".next directory not found"
-          if [ -d ".next/server" ] && [ -d ".next/static" ]; then
-            echo "✓ Next.js build successful (server and static directories found)"
-          else
-            echo "✗ Build output incomplete"
-            exit 1
-          fi
-
-      - name: Run tests
-        run: npm run test --if-present
-
-      - name: Verify standalone build
-        run: |
-          ls -la .next/standalone || echo "Standalone build not found!"
-          ls -la .next/standalone/server.js || echo "Server.js not found!"
+          npm install
+          npm run build --if-present
+          npm run test --if-present
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: |
-            .
-            !node_modules
-            !.next/cache
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
@@ -80,46 +48,12 @@ jobs:
         with:
           name: node-app
       
-      - name: Set up Node.js version
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'npm'
-
-      - name: Install dependencies (including Prisma)
-        run: npm ci --include=dev
-
-      - name: Verify Prisma installation
-        run: |
-          npx prisma --version || echo "Prisma not found"
-          ls -la node_modules/prisma || echo "Prisma module not found"
-
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1D1E8417E1FF4AEF872CBD6F62202480 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_567256163E8B452E828090B10C83A54B }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_AD31C85BAC014F6BA920A09B024185D4 }}
-
-      - name: Generate Prisma Client for Azure
-        run: npx prisma generate
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-      - name: Verify files before deployment
-        run: |
-          echo "Checking for .next/server directory..."
-          if [ -d ".next/server" ]; then
-            echo "✓ Next.js server directory exists"
-          else
-            echo "✗ WARNING: .next/server not found!"
-            echo "Contents of .next:"
-            ls -la .next/ || echo ".next directory not found"
-          fi
-          echo "Checking for package.json..."
-          ls -la package.json
-          echo "Checking for prisma in package.json..."
-          grep -q '"prisma"' package.json && echo "✓ Prisma in package.json" || echo "✗ Prisma not in package.json"
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_11A83C1077454C828A9AEC301C39A755 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BBECC89ED42B4564B6CAC982133AF683 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_398780543A9E42F69D0A2FC1897DAC21 }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
@@ -128,5 +62,4 @@ jobs:
           app-name: 'hadea-orderentry'
           slot-name: 'Production'
           package: .
-          startup-command: 'npx prisma generate && npm start'
           
