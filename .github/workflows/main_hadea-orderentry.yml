@@ -39,16 +39,16 @@ jobs:
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
 
-      - name: Verify standalone build exists
+      - name: Verify build output
         run: |
-          if [ ! -d ".next/standalone" ]; then
-            echo "ERROR: .next/standalone directory not found!"
-            echo "Build output:"
-            ls -la .next/ || echo ".next directory not found"
+          echo "Build output:"
+          ls -la .next/ || echo ".next directory not found"
+          if [ -f ".next/server.js" ]; then
+            echo "✓ Standard Next.js build successful"
+          else
+            echo "✗ Build output not found"
             exit 1
           fi
-          echo "Standalone build verified:"
-          ls -la .next/standalone/
 
       - name: Run tests
         run: npm run test --if-present
@@ -108,12 +108,11 @@ jobs:
 
       - name: Verify files before deployment
         run: |
-          echo "Checking for .next/standalone..."
-          if [ -d ".next/standalone" ]; then
-            echo "✓ Standalone directory exists"
-            ls -la .next/standalone/
+          echo "Checking for .next/server.js..."
+          if [ -f ".next/server.js" ]; then
+            echo "✓ Next.js server file exists"
           else
-            echo "✗ WARNING: .next/standalone not found!"
+            echo "✗ WARNING: .next/server.js not found!"
             echo "Contents of .next:"
             ls -la .next/ || echo ".next directory not found"
           fi
