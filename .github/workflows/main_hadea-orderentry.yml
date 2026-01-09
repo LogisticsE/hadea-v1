@@ -68,6 +68,11 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_567256163E8B452E828090B10C83A54B }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_AD31C85BAC014F6BA920A09B024185D4 }}
 
+      - name: Generate Prisma Client for Azure
+        run: npx prisma generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
@@ -75,4 +80,5 @@ jobs:
           app-name: 'hadea-orderentry'
           slot-name: 'Production'
           package: .
+          startup-command: 'npx prisma generate && node .next/standalone/server.js'
           
