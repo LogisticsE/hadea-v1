@@ -72,7 +72,18 @@ jobs:
           cp prisma/schema.prisma .next/standalone/prisma/
           
           echo "=== Verify BUILD_ID exists ==="
-          cat .next/standalone/.next/BUILD_ID
+          if [ -f ".next/standalone/.next/BUILD_ID" ]; then
+            echo "✓ BUILD_ID found:"
+            cat .next/standalone/.next/BUILD_ID
+          else
+            echo "✗ BUILD_ID NOT FOUND in standalone!"
+            echo "Contents of .next/standalone/.next/:"
+            ls -la .next/standalone/.next/ || true
+            exit 1
+          fi
+          
+          echo "=== Full .next structure ==="
+          find .next/standalone/.next -type f | head -20
           
           echo "=== Package size ==="
           du -sh .next/standalone
@@ -102,6 +113,24 @@ jobs:
           ls -la
           echo "=== Checking server.js ==="
           test -f server.js && echo "✓ server.js found" || exit 1
+          echo "=== Checking .next directory ==="
+          if [ -d ".next" ]; then
+            echo "✓ .next directory found"
+            ls -la .next/
+            echo "=== Checking BUILD_ID ==="
+            if [ -f ".next/BUILD_ID" ]; then
+              echo "✓ BUILD_ID found:"
+              cat .next/BUILD_ID
+            else
+              echo "✗ BUILD_ID NOT FOUND!"
+              echo "Contents of .next/:"
+              ls -la .next/ || true
+              exit 1
+            fi
+          else
+            echo "✗ .next directory NOT FOUND!"
+            exit 1
+          fi
 
       - name: Login to Azure
         uses: azure/login@v2
