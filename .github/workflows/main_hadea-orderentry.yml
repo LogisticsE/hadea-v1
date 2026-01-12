@@ -47,18 +47,34 @@ jobs:
             exit 1
           fi
           
-          # Copy static files to standalone
+          # Copy static files to standalone (required)
           cp -r .next/static .next/standalone/.next/static
           
-          # Copy essential .next files
-          cp .next/BUILD_ID .next/standalone/.next/
-          cp .next/build-manifest.json .next/standalone/.next/
-          cp .next/prerender-manifest.json .next/standalone/.next/
-          cp .next/prerender-manifest.js .next/standalone/.next/
-          cp .next/routes-manifest.json .next/standalone/.next/
-          cp .next/app-build-manifest.json .next/standalone/.next/
-          cp .next/app-path-routes-manifest.json .next/standalone/.next/
-          cp .next/react-loadable-manifest.json .next/standalone/.next/ 2>/dev/null || true
+          # Copy ALL root .next files that standalone needs
+          # Standalone doesn't include these by default - we MUST copy them
+          echo "=== Copying ALL required .next root files ==="
+          for file in BUILD_ID build-manifest.json prerender-manifest.json prerender-manifest.js routes-manifest.json app-build-manifest.json app-path-routes-manifest.json react-loadable-manifest.json images-manifest.json export-marker.json; do
+            if [ -f ".next/$file" ]; then
+              cp ".next/$file" ".next/standalone/.next/$file"
+              echo "✓ Copied $file"
+            fi
+          done
+          
+          # Also copy any other JSON files in .next root
+          cp .next/*.json .next/standalone/.next/ 2>/dev/null || true
+          
+          # CRITICAL: Verify BUILD_ID exists
+          echo "=== CRITICAL: Verifying BUILD_ID ==="
+          if [ ! -f ".next/standalone/.next/BUILD_ID" ]; then
+            echo "ERROR: BUILD_ID STILL MISSING AFTER COPY!"
+            echo "Root .next files:"
+            ls -la .next/*.json .next/BUILD_ID 2>/dev/null || true
+            echo "Standalone .next files:"
+            ls -la .next/standalone/.next/ || true
+            exit 1
+          fi
+          echo "✓ BUILD_ID verified:"
+          cat .next/standalone/.next/BUILD_ID
           
           # Copy public folder
           if [ -d "public" ]; then
@@ -70,6 +86,12 @@ jobs:
           # Copy prisma schema
           mkdir -p .next/standalone/prisma
           cp prisma/schema.prisma .next/standalone/prisma/
+          
+          # Copy startup script as backup
+          if [ -f "startup.sh" ]; then
+            cp startup.sh .next/standalone/startup.sh
+            chmod +x .next/standalone/startup.sh
+          fi
           
           echo "=== Verify BUILD_ID exists ==="
           if [ -f ".next/standalone/.next/BUILD_ID" ]; then
