@@ -31,7 +31,7 @@ Create/edit `.env` file with:
 
 ```env
 # Database - Use Docker PostgreSQL (see Step 3)
-DATABASE_URL="postgresql://postgres:password@localhost:5432/sklms?schema=public"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/hadea?schema=public"
 
 # Redis (optional for now)
 REDIS_URL="redis://localhost:6379"
@@ -74,7 +74,7 @@ This will:
 ```bash
 docker ps
 ```
-You should see `sklms-postgres` and `sklms-redis` containers running.
+You should see `hadea-postgres` and `hadea-redis` containers running.
 
 ### Step 4: Set Up Database Schema
 
@@ -115,7 +115,7 @@ http://localhost:3000
 
 ### 1. Home Page
 - Visit: `http://localhost:3000`
-- Should show the SKLMS landing page
+- Should show the EF-HaDEA landing page
 
 ### 2. Dashboard
 - Visit: `http://localhost:3000/dashboard`

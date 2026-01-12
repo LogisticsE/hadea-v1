@@ -34,7 +34,7 @@ export function Sidebar() {
     <div className="flex h-full w-64 flex-col bg-gray-900 text-white">
       {/* Logo */}
       <div className="flex h-16 items-center justify-center border-b border-gray-800">
-        <h1 className="text-2xl font-bold">SKLMS</h1>
+        <h1 className="text-2xl font-bold">EF-HaDEA</h1>
       </div>
 
       {/* Navigation */}

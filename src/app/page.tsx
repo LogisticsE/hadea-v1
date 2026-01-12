@@ -7,9 +7,9 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-4xl font-bold mb-2">SKLMS</CardTitle>
+          <CardTitle className="text-4xl font-bold mb-2">EF-HaDEA</CardTitle>
           <CardDescription className="text-xl">
-            Sample Kit Logistics Management System
+            HaDEA Order Entry
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

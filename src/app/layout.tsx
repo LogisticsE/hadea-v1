@@ -5,7 +5,7 @@ import '@/styles/globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'SKLMS - Sample Kit Logistics Management System',
+  title: 'EF-HaDEA - HaDEA Order Entry',
   description: 'Manage sample kit shipments and logistics',
 }
 

@@ -157,9 +157,9 @@ npx prisma db seed
 - This is fine - Prisma will create tables in the `public` schema
 - If you want a separate database, create it first:
   ```sql
-  CREATE DATABASE sklms;
+  CREATE DATABASE hadea;
   ```
-  Then update connection string to use `sklms` instead of `postgres`
+  Then update connection string to use `hadea` instead of `postgres`
 
 ### "Authentication failed"
 - Verify username and password are correct

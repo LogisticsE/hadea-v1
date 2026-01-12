@@ -62,7 +62,7 @@ After running migrations, you should see:
    ```
    https://hadea-orderentry.azurewebsites.net
    ```
-   Should load the SKLMS application!
+   Should load the EF-HaDEA application!
 
 ## Alternative: Run Migrations via Azure Cloud Shell
 

@@ -2,7 +2,7 @@
 
 ## ⚠️ Important: You Need PostgreSQL, NOT SQL Server!
 
-The SKLMS application uses **PostgreSQL**, not SQL Server. Azure SQL Database is expensive, but PostgreSQL has free/low-cost options.
+The EF-HaDEA application uses **PostgreSQL**, not SQL Server. Azure SQL Database is expensive, but PostgreSQL has free/low-cost options.
 
 ## Option 1: Azure Database for PostgreSQL - Flexible Server (FREE Tier Available!)
 

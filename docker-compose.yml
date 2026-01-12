@@ -4,11 +4,11 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: sklms-postgres
+    container_name: hadea-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: sklms
+      POSTGRES_DB: hadea
     ports:
       - "5432:5432"
     volumes:
@@ -22,7 +22,7 @@ services:
   # Redis for caching and job queues
   redis:
     image: redis:7-alpine
-    container_name: sklms-redis
+    container_name: hadea-redis
     ports:
       - "6379:6379"
     volumes:
@@ -36,7 +36,7 @@ services:
   # MinIO for local S3-compatible object storage (optional)
   minio:
     image: minio/minio:latest
-    container_name: sklms-minio
+    container_name: hadea-minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -58,10 +58,10 @@ services:
       context: .
       dockerfile: Dockerfile
       target: development
-    container_name: sklms-app
+    container_name: hadea-app
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/sklms?schema=public
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/hadea?schema=public
       REDIS_URL: redis://redis:6379
       STORAGE_TYPE: local
       UPLOAD_DIR: /app/uploads

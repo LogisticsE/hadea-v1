@@ -1,4 +1,4 @@
-# SKLMS - Sample Kit Logistics Management System
+# EF-HaDEA - HaDEA Order Entry
 
 A comprehensive web application for managing laboratory sample kit shipments, from outbound delivery to sample return. Built with Next.js, TypeScript, and PostgreSQL.
 
@@ -67,7 +67,7 @@ cp .env.example .env
 Edit `.env` with your configuration:
 
 ```env
-DATABASE_URL="postgresql://postgres:password@localhost:5432/sklms?schema=public"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/hadea?schema=public"
 REDIS_URL="redis://localhost:6379"
 STORAGE_TYPE="local"
 UPLOAD_DIR="./uploads"
@@ -122,7 +122,7 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ## 📁 Project Structure
 
 ```
-sklms/
+hadea-orderentry/
 ├── src/
 │   ├── app/                    # Next.js App Router pages
 │   │   ├── (dashboard)/        # Dashboard layout routes
@@ -239,9 +239,9 @@ npm run db:studio    # Open Prisma Studio
 ## 🚢 Production Deployment
 
 1. Set environment variables for production
-2. Build the Docker image: `docker build -t sklms:latest .`
+2. Build the Docker image: `docker build -t hadea-orderentry:latest .`
 3. Run with docker-compose or your orchestration tool
-4. Run migrations: `docker exec sklms-app npx prisma migrate deploy`
+4. Run migrations: `docker exec hadea-app npx prisma migrate deploy`
 5. (Optional) Seed initial data
 
 ## 📝 License
@@ -250,8 +250,8 @@ This project is proprietary software developed for HaDEA contract compliance.
 
 ## 👥 Team
 
-Developed by the SKLMS Development Team
+Developed by the EF-HaDEA Development Team
 
 ## 📞 Support
 
-For support, please contact: support@sklms.com
+For support, please contact: support@hadea.com

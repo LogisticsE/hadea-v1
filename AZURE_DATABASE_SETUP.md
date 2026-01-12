@@ -2,7 +2,7 @@
 
 ## Why You Need a Database
 
-The SKLMS application requires a PostgreSQL database to store:
+The EF-HaDEA application requires a PostgreSQL database to store:
 - Orders, Sites, Labs, Kits
 - Stock items and movements
 - Shipments and tracking
@@ -156,9 +156,9 @@ After setting up:
 ### "Database does not exist"
 - Create a database in your PostgreSQL server:
   ```sql
-  CREATE DATABASE sklms;
+  CREATE DATABASE hadea;
   ```
-- Update connection string to use `sklms` instead of `postgres`
+- Update connection string to use `hadea` instead of `postgres`
 
 ### "Authentication failed"
 - Verify username and password are correct

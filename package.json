@@ -1,7 +1,7 @@
 {
-  "name": "sklms",
+  "name": "hadea-orderentry",
   "version": "1.0.0",
-  "description": "Sample Kit Logistics Management System",
+  "description": "HaDEA Order Entry",
   "private": true,
   "scripts": {
     "dev": "next dev",

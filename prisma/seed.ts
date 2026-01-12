@@ -7,10 +7,10 @@ async function main() {
 
   // Create a default user
   const user = await prisma.user.upsert({
-    where: { email: 'admin@sklms.com' },
+    where: { email: 'admin@hadea.com' },
     update: {},
     create: {
-      email: 'admin@sklms.com',
+      email: 'admin@hadea.com',
       name: 'System Administrator',
       passwordHash: 'changeme', // In production, use bcrypt
       role: 'ADMIN',
@@ -178,7 +178,7 @@ async function main() {
   await prisma.hadeaConfig.create({
     data: {
       contractingAuthorityName: 'European Health and Digital Executive Agency',
-      contractorName: 'Sample Kit Logistics Services',
+      contractorName: 'HaDEA Order Entry Services',
       specificContractNumber: 'HADEA-2026-SC-001',
       specificContractDate: new Date('2026-01-01'),
       isActive: true,

@@ -1,4 +1,4 @@
-// Prisma Schema for Sample Kit Logistics Management System (SKLMS)
+// Prisma Schema for HaDEA Order Entry (EF-HaDEA)
 
 generator client {
   provider = "prisma-client-js"

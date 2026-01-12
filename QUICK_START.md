@@ -41,7 +41,7 @@ npm run dev
 ## Verify It's Working
 
 1. Open browser: http://localhost:3000
-2. You should see the SKLMS landing page
+2. You should see the EF-HaDEA landing page
 3. Click "Go to Dashboard"
 4. You should see the dashboard with sample data
 
