@@ -7,7 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FlaskConical, Mail, Phone, Building, Globe, Edit, MapPin } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowLeft, FlaskConical, Mail, Phone, Building, Globe, Edit, MapPin, UserPlus } from 'lucide-react';
 import { formatDate } from '@/lib/utils/date-utils';
 
 export default function LabDetailPage() {
@@ -17,6 +21,15 @@ export default function LabDetailPage() {
   const [lab, setLab] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    department: '',
+    isPrimary: false,
+  });
+  const [addingContact, setAddingContact] = useState(false);
 
   useEffect(() => {
     if (labId) {
@@ -44,6 +57,33 @@ export default function LabDetailPage() {
       setOrders(data.data || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
+    }
+  };
+
+  const handleAddContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddingContact(true);
+
+    try {
+      const response = await fetch(`/api/labs/${labId}/contacts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contactForm),
+      });
+
+      if (response.ok) {
+        setContactDialogOpen(false);
+        setContactForm({ name: '', email: '', phone: '', department: '', isPrimary: false });
+        fetchLab(); // Refresh lab data
+      } else {
+        const error = await response.json();
+        alert(error.error?.message || 'Failed to add contact');
+      }
+    } catch (error) {
+      console.error('Error adding contact:', error);
+      alert('Failed to add contact');
+    } finally {
+      setAddingContact(false);
     }
   };
 
@@ -165,8 +205,84 @@ export default function LabDetailPage() {
         {/* Contacts */}
         <Card>
           <CardHeader>
-            <CardTitle>Contacts ({lab.contacts?.length || 0})</CardTitle>
-            <CardDescription>Laboratory contact persons</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Contacts ({lab.contacts?.length || 0})</CardTitle>
+                <CardDescription>Laboratory contact persons</CardDescription>
+              </div>
+              <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Add Contact
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Contact</DialogTitle>
+                    <DialogDescription>Add a new contact person for this laboratory</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleAddContact}>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-name">Name *</Label>
+                        <Input
+                          id="contact-name"
+                          required
+                          value={contactForm.name}
+                          onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-email">Email *</Label>
+                        <Input
+                          id="contact-email"
+                          type="email"
+                          required
+                          value={contactForm.email}
+                          onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-phone">Phone</Label>
+                        <Input
+                          id="contact-phone"
+                          type="tel"
+                          value={contactForm.phone}
+                          onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-department">Department</Label>
+                        <Input
+                          id="contact-department"
+                          value={contactForm.department}
+                          onChange={(e) => setContactForm({ ...contactForm, department: e.target.value })}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="contact-primary"
+                          checked={contactForm.isPrimary}
+                          onCheckedChange={(checked) => setContactForm({ ...contactForm, isPrimary: checked === true })}
+                        />
+                        <Label htmlFor="contact-primary" className="cursor-pointer">
+                          Set as primary contact
+                        </Label>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setContactDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={addingContact}>
+                        {addingContact ? 'Adding...' : 'Add Contact'}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardHeader>
           <CardContent>
             {lab.contacts && lab.contacts.length > 0 ? (
