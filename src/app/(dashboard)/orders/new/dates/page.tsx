@@ -256,15 +256,17 @@ export default function SelectDatesPage() {
                   disabled={isPast || !isCurrentMonth}
                   onClick={() => toggleDate(day)}
                   className={`
-                    min-h-[60px] border rounded-lg p-2 text-sm transition-colors font-medium
+                    min-h-[60px] border rounded-lg p-2 text-sm transition-colors font-medium flex items-center justify-center
                     ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white text-gray-900'}
                     ${isPast && isCurrentMonth ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}
                     ${isToday && !isSelected ? 'ring-2 ring-blue-500' : ''}
-                    ${isSelected ? 'bg-blue-600 text-white font-bold hover:bg-blue-700 border-blue-700 shadow-md' : ''}
+                    ${isSelected ? 'bg-blue-600 hover:bg-blue-700 border-blue-700 shadow-md' : ''}
                     ${!isPast && !isSelected && isCurrentMonth ? 'hover:bg-blue-50 cursor-pointer hover:border-blue-300' : ''}
                   `}
                 >
-                  <span className={isSelected ? 'text-white' : ''}>{format(day, 'd')}</span>
+                  <span className={`${isSelected ? 'text-white font-bold' : 'text-inherit'}`}>
+                    {format(day, 'd')}
+                  </span>
                 </button>
               );
             })}
