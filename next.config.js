@@ -1,11 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Standalone mode creates a self-contained build with minimal node_modules
-  // This eliminates ALL dependency issues on Azure
-  output: 'standalone',
+  // Removed 'standalone' output - Vercel handles builds automatically
+  // For Azure, you can add: output: 'standalone'
   images: {
-    domains: ['localhost'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+    ],
   },
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client', 'bcrypt'],
