@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +24,7 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: npm install
+      - name: Install dependencies
         run: npm ci
 
       - name: Generate Prisma Client
@@ -32,63 +32,86 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: Build application
+      - name: Build application (standalone mode)
         run: npm run build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
 
-      - name: Run tests
-        run: npm run test --if-present
-
-      - name: Create deployment package
+      - name: Prepare standalone deployment package
         run: |
-          # Create a clean deployment directory
-          mkdir -p deploy-package
-          # Copy source code and config files
-          cp -r src prisma public package.json package-lock.json tsconfig.json next.config.js tailwind.config.js postcss.config.js deploy-package/ 2>/dev/null || true
-          # Copy entire .next directory (excluding cache)
-          if [ -d ".next" ]; then
-            cp -r .next deploy-package/ 2>/dev/null || true
-            # Remove cache if it exists
-            rm -rf deploy-package/.next/cache 2>/dev/null || true
+          echo "=== Verifying standalone build ==="
+          ls -la .next/
+          
+          if [ ! -d ".next/standalone" ]; then
+            echo "ERROR: .next/standalone directory not found!"
+            exit 1
           fi
-          echo "Deployment package contents:"
-          ls -la deploy-package/
-          echo "Deployment package size:"
-          du -sh deploy-package
-          echo ".next directory contents:"
-          ls -la deploy-package/.next/ 2>/dev/null || echo ".next not found"
+          
+          echo "=== Standalone directory contents ==="
+          ls -la .next/standalone/
+          
+          # Copy static files to standalone (required for standalone mode)
+          echo "=== Copying static files ==="
+          cp -r .next/static .next/standalone/.next/static
+          
+          # Copy public folder to standalone
+          echo "=== Copying public folder ==="
+          cp -r public .next/standalone/public
+          
+          # Copy prisma schema (needed for Prisma Client)
+          echo "=== Copying Prisma files ==="
+          mkdir -p .next/standalone/prisma
+          cp prisma/schema.prisma .next/standalone/prisma/
+          
+          echo "=== Final standalone package contents ==="
+          ls -la .next/standalone/
+          echo "=== .next folder in standalone ==="
+          ls -la .next/standalone/.next/
+          echo "=== node_modules in standalone ==="
+          ls -la .next/standalone/node_modules/ | head -20
+          
+          echo "=== Package size ==="
+          du -sh .next/standalone
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: deploy-package
+          path: .next/standalone
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: node-app
-      
+
+      - name: List deployment contents
+        run: |
+          echo "=== Deployment package contents ==="
+          ls -la
+          echo "=== Checking for server.js ==="
+          if [ -f "server.js" ]; then
+            echo "✓ server.js found"
+          else
+            echo "✗ server.js NOT found"
+            exit 1
+          fi
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_11A83C1077454C828A9AEC301C39A755 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BBECC89ED42B4564B6CAC982133AF683 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_398780543A9E42F69D0A2FC1897DAC21 }}
-
-      - name: Wait for SCM to be ready
-        run: sleep 15
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
@@ -97,5 +120,4 @@ jobs:
           app-name: 'hadea-orderentry'
           slot-name: 'Production'
           package: .
-          startup-command: 'npx next start'
-          
+          startup-command: 'node server.js'

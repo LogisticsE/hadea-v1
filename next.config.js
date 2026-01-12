@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Note: standalone mode disabled for Azure compatibility
-  // Azure Oryx build system handles the deployment differently
+  // Standalone mode creates a self-contained build with minimal node_modules
+  // This eliminates ALL dependency issues on Azure
+  output: 'standalone',
   images: {
     domains: ['localhost'],
   },

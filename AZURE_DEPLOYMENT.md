@@ -1,8 +1,14 @@
 # Azure App Service Deployment Guide
 
-## Required Azure Configuration
+## Deployment Architecture
 
-After deploying, you **must** configure these settings in the Azure Portal:
+This application uses **Next.js Standalone Mode** for deployment. The standalone build:
+- Bundles everything needed (including minimal node_modules) into a self-contained package
+- Requires NO dependency installation at runtime
+- Uses a simple `node server.js` startup command
+- Is small (~50MB) and deploys reliably
+
+## Required Azure Configuration
 
 ### 1. Environment Variables (Application Settings)
 
@@ -11,12 +17,9 @@ Go to: **Azure Portal → Your App Service → Configuration → Application set
 Add these required environment variables:
 
 ```
-DATABASE_URL=your_postgresql_connection_string
+DATABASE_URL=postgresql://username:password@host:5432/database?sslmode=require
 NEXTAUTH_SECRET=your_secret_key_here
 NEXTAUTH_URL=https://your-app-name.azurewebsites.net
-REDIS_URL=your_redis_connection_string (optional)
-STORAGE_TYPE=local
-UPLOAD_DIR=./uploads
 ```
 
 ### 2. Startup Command
@@ -25,48 +28,58 @@ Go to: **Azure Portal → Your App Service → Configuration → General setting
 
 Set the **Startup Command** to:
 ```
-npx prisma generate && node .next/standalone/server.js
+node server.js
 ```
 
-Or if you prefer a simpler approach:
-```
-node .next/standalone/server.js
-```
-(But make sure Prisma Client is generated during deployment)
+**Important**: This is the ONLY startup command needed. The standalone build includes everything.
 
 ### 3. Node Version
 
-Ensure Node.js version is set to **20.x**:
+Ensure Node.js version is set to **20.x** or **22.x**:
 - Go to: **Configuration → General settings → Stack settings**
 - Stack: **Node**
-- Major version: **20**
+- Major version: **20** or **22**
 
 ### 4. Port Configuration
 
-Azure automatically sets the `PORT` environment variable. The Next.js standalone server will use it automatically.
+Azure automatically sets the `PORT` environment variable. The Next.js standalone server uses it automatically.
+
+## How the Deployment Works
+
+1. GitHub Actions builds the app with `output: 'standalone'` in `next.config.js`
+2. This creates `.next/standalone/` containing:
+   - `server.js` - the application entry point
+   - `node_modules/` - minimal dependencies needed to run
+   - `.next/` - compiled application
+3. We copy `public/` and `.next/static/` into the standalone folder
+4. Only the standalone folder is deployed (small, self-contained)
+5. Azure runs `node server.js` - no npm install, no npx, just Node.js
 
 ## Common Issues and Solutions
 
 ### Issue: "Application Error" or "502 Bad Gateway"
 
-**Possible causes:**
-1. **Missing environment variables** - Check Application Settings
-2. **Prisma Client not generated** - Ensure startup command includes `npx prisma generate`
-3. **Database connection failed** - Verify DATABASE_URL is correct
-4. **Port binding issue** - Next.js standalone should handle this automatically
+**Check:**
+1. Startup command is exactly `node server.js`
+2. DATABASE_URL environment variable is set correctly
+3. Database firewall allows Azure services
 
-### Issue: "Cannot find module '@prisma/client'"
+### Issue: Old deployment cached
 
-**Solution:** The startup command must generate Prisma Client:
+**Solution:**
+1. Go to App Service → Deployment Center → Logs
+2. Check the latest deployment succeeded
+3. Restart the App Service
+4. If still failing, try Stop → Start (not just Restart)
+
+### Issue: "next: not found" or "npm: not found"
+
+**This means the startup command is wrong.** Change it to:
 ```
-npx prisma generate && node .next/standalone/server.js
+node server.js
 ```
 
-### Issue: Database connection errors
-
-**Solution:** 
-- Verify DATABASE_URL format: `postgresql://user:password@host:port/database?schema=public`
-- Ensure your Azure PostgreSQL allows connections from App Service
+The standalone build doesn't need npm or npx at runtime.
 - Check firewall rules in Azure PostgreSQL
 
 ## Verifying Deployment
