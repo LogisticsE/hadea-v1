@@ -56,9 +56,14 @@ jobs:
           echo "=== Copying static files ==="
           cp -r .next/static .next/standalone/.next/static
           
-          # Copy public folder to standalone
+          # Copy public folder to standalone (if exists)
           echo "=== Copying public folder ==="
-          cp -r public .next/standalone/public
+          if [ -d "public" ]; then
+            cp -r public .next/standalone/public
+          else
+            mkdir -p .next/standalone/public
+            echo "No public folder found, created empty one"
+          fi
           
           # Copy prisma schema (needed for Prisma Client)
           echo "=== Copying Prisma files ==="
