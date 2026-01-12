@@ -1,20 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatDate } from '@/lib/utils/date-utils';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/lib/constants/order-status';
+import { format, isSameDay, parseISO } from 'date-fns';
 
 export default function OrdersPage() {
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const filterDate = searchParams.get('date');
 
   useEffect(() => {
     fetchOrders();
@@ -46,25 +50,53 @@ export default function OrdersPage() {
     return variants[color] || variants.gray;
   };
 
-  const filteredOrders = orders.filter(order =>
-    order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.site?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.lab?.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOrders = orders.filter(order => {
+    // Search filter
+    const matchesSearch = 
+      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.site?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.lab?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Date filter (if date param is present)
+    if (filterDate) {
+      const filterDateObj = parseISO(filterDate);
+      const matchesDate = 
+        isSameDay(parseISO(order.samplingDate), filterDateObj) ||
+        isSameDay(parseISO(order.outboundShipDate), filterDateObj);
+      return matchesSearch && matchesDate;
+    }
+    
+    return matchesSearch;
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Orders</h1>
-          <p className="text-muted-foreground">Manage sample kit orders</p>
+          <p className="text-muted-foreground">
+            {filterDate 
+              ? `Orders for ${format(parseISO(filterDate), 'MMMM d, yyyy')}`
+              : 'Manage sample kit orders'
+            }
+          </p>
         </div>
-        <Link href="/orders/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Order
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          {filterDate && (
+            <Link href="/orders">
+              <Button variant="outline" size="sm">
+                <X className="mr-2 h-4 w-4" />
+                Clear Date Filter
+              </Button>
+            </Link>
+          )}
+          <Link href="/orders/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New Order
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card>

@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachDayOfInterval, isSameMonth, isSameDay, startOfWeek, endOfWeek } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function CalendarPage() {
+  const router = useRouter();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarData, setCalendarData] = useState<any>({});
   const [loading, setLoading] = useState(false);
@@ -45,6 +47,11 @@ export default function CalendarPage() {
 
   const previousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
+
+  const handleDateClick = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    router.push(`/orders?date=${dateStr}`);
+  };
 
   return (
     <div className="space-y-6">
@@ -89,8 +96,9 @@ export default function CalendarPage() {
                 return (
                   <div
                     key={day.toString()}
+                    onClick={() => isCurrentMonth && handleDateClick(day)}
                     className={`min-h-[100px] border rounded-lg p-2 ${
-                      isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+                      isCurrentMonth ? 'bg-white cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-colors' : 'bg-gray-50'
                     } ${isToday ? 'ring-2 ring-blue-500' : ''}`}
                   >
                     <div className="text-sm font-medium mb-1">
