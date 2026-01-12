@@ -13,153 +13,47 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Node.js version
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
-          node-version: '20.x'
-          cache: 'npm'
+          node-version: '22.x'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
-      - name: Build application
-        run: npm run build
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-
-      - name: Prepare standalone deployment package
+      - name: npm install, build, and test
         run: |
-          echo "=== Verifying standalone build ==="
-          ls -la .next/
-          
-          if [ ! -d ".next/standalone" ]; then
-            echo "ERROR: .next/standalone directory not found!"
-            exit 1
-          fi
-          
-          # Copy static files to standalone (required)
-          cp -r .next/static .next/standalone/.next/static
-          
-          # Copy ALL root .next files that standalone needs
-          # Standalone doesn't include these by default - we MUST copy them
-          echo "=== Copying ALL required .next root files ==="
-          for file in BUILD_ID build-manifest.json prerender-manifest.json prerender-manifest.js routes-manifest.json app-build-manifest.json app-path-routes-manifest.json react-loadable-manifest.json images-manifest.json export-marker.json; do
-            if [ -f ".next/$file" ]; then
-              cp ".next/$file" ".next/standalone/.next/$file"
-              echo "✓ Copied $file"
-            fi
-          done
-          
-          # Also copy any other JSON files in .next root
-          cp .next/*.json .next/standalone/.next/ 2>/dev/null || true
-          
-          # CRITICAL: Verify BUILD_ID exists
-          echo "=== CRITICAL: Verifying BUILD_ID ==="
-          if [ ! -f ".next/standalone/.next/BUILD_ID" ]; then
-            echo "ERROR: BUILD_ID STILL MISSING AFTER COPY!"
-            echo "Root .next files:"
-            ls -la .next/*.json .next/BUILD_ID 2>/dev/null || true
-            echo "Standalone .next files:"
-            ls -la .next/standalone/.next/ || true
-            exit 1
-          fi
-          echo "✓ BUILD_ID verified:"
-          cat .next/standalone/.next/BUILD_ID
-          
-          # Copy public folder
-          if [ -d "public" ]; then
-            cp -r public .next/standalone/public
-          else
-            mkdir -p .next/standalone/public
-          fi
-          
-          # Copy prisma schema
-          mkdir -p .next/standalone/prisma
-          cp prisma/schema.prisma .next/standalone/prisma/
-          
-          # Copy startup script as backup
-          if [ -f "startup.sh" ]; then
-            cp startup.sh .next/standalone/startup.sh
-            chmod +x .next/standalone/startup.sh
-          fi
-          
-          echo "=== Verify BUILD_ID exists ==="
-          if [ -f ".next/standalone/.next/BUILD_ID" ]; then
-            echo "✓ BUILD_ID found:"
-            cat .next/standalone/.next/BUILD_ID
-          else
-            echo "✗ BUILD_ID NOT FOUND in standalone!"
-            echo "Contents of .next/standalone/.next/:"
-            ls -la .next/standalone/.next/ || true
-            exit 1
-          fi
-          
-          echo "=== Full .next structure ==="
-          find .next/standalone/.next -type f | head -20
-          
-          echo "=== Package size ==="
-          du -sh .next/standalone
+          npm install
+          npm run build --if-present
+          npm run test --if-present
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .next/standalone
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write
-      contents: read
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: node-app
-
-      - name: Verify deployment package
-        run: |
-          echo "=== Deployment contents ==="
-          ls -la
-          echo "=== Checking server.js ==="
-          test -f server.js && echo "✓ server.js found" || exit 1
-          echo "=== Checking .next directory ==="
-          if [ -d ".next" ]; then
-            echo "✓ .next directory found"
-            ls -la .next/
-            echo "=== Checking BUILD_ID ==="
-            if [ -f ".next/BUILD_ID" ]; then
-              echo "✓ BUILD_ID found:"
-              cat .next/BUILD_ID
-            else
-              echo "✗ BUILD_ID NOT FOUND!"
-              echo "Contents of .next/:"
-              ls -la .next/ || true
-              exit 1
-            fi
-          else
-            echo "✗ .next directory NOT FOUND!"
-            exit 1
-          fi
-
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_C7DCE52BB61341D9A6BCC7065807B278 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_95949B904BCB4E0291148E79B8B9E298 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_07B2663BA3904F87A5EEC5330222E9F6 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_321BD69F39F64F02A0DEFE885E5477A8 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7E724F8503C94C1C8C7D8E45E779E33B }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_3CFA414C2EA9442D95455E23D67625C1 }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
@@ -168,4 +62,4 @@ jobs:
           app-name: 'hadea-orderentry'
           slot-name: 'Production'
           package: .
-          startup-command: 'node server.js'
+          
