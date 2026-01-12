@@ -56,6 +56,17 @@ jobs:
           echo "=== Copying static files ==="
           cp -r .next/static .next/standalone/.next/static
           
+          # Copy essential .next files that standalone needs but doesn't include
+          echo "=== Copying essential .next files ==="
+          cp .next/BUILD_ID .next/standalone/.next/
+          cp .next/build-manifest.json .next/standalone/.next/
+          cp .next/prerender-manifest.json .next/standalone/.next/
+          cp .next/prerender-manifest.js .next/standalone/.next/
+          cp .next/routes-manifest.json .next/standalone/.next/
+          cp .next/app-build-manifest.json .next/standalone/.next/
+          cp .next/app-path-routes-manifest.json .next/standalone/.next/
+          cp .next/react-loadable-manifest.json .next/standalone/.next/ 2>/dev/null || true
+          
           # Copy public folder to standalone (if exists)
           echo "=== Copying public folder ==="
           if [ -d "public" ]; then
@@ -74,6 +85,8 @@ jobs:
           ls -la .next/standalone/
           echo "=== .next folder in standalone ==="
           ls -la .next/standalone/.next/
+          echo "=== Verify BUILD_ID exists ==="
+          cat .next/standalone/.next/BUILD_ID
           echo "=== node_modules in standalone ==="
           ls -la .next/standalone/node_modules/ | head -20
           
