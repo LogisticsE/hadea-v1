@@ -10,8 +10,8 @@
    - Select repository: `LogisticsE/hadea-v1`
    - Branch: `main`
 
-3. **Configure Environment Variables**
-   Click "Environment Variables" and add:
+3. **Configure Environment Variables** ⚠️ **CRITICAL**
+   Click "Environment Variables" and add **BEFORE deploying**:
    
    ```
    DATABASE_URL=postgresql://Y2ZA%40etbnl.eurofins.com:MercuriusELB_GM22%21@hadea-db.postgres.database.azure.com:5432/postgres?sslmode=require
@@ -19,7 +19,10 @@
    NEXTAUTH_URL=https://your-app-name.vercel.app
    ```
    
-   **Note**: Vercel will give you the URL after first deployment. Update `NEXTAUTH_URL` then.
+   **IMPORTANT**: 
+   - Add `DATABASE_URL` **FIRST** - it's required during build
+   - Make sure to check "Production", "Preview", and "Development" for all variables
+   - Vercel will give you the URL after first deployment - update `NEXTAUTH_URL` then
 
 4. **Deploy**
    - Click "Deploy"
