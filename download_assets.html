@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tandarts Heusden - Asset Downloader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+        
+        .warning h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .warning p {
+            color: #856404;
+            line-height: 1.6;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+        
+        .info h3 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+        
+        .info ul {
+            margin-left: 20px;
+            color: #0c5460;
+            line-height: 1.8;
+        }
+        
+        .button-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .download-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px 60px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+        }
+        
+        .download-btn:active {
+            transform: translateY(0);
+        }
+        
+        .asset-list {
+            margin-top: 30px;
+        }
+        
+        .asset-category {
+            margin-bottom: 30px;
+        }
+        
+        .asset-category h3 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .asset-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .asset-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .asset-name {
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .asset-type {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+        
+        .download-link {
+            background: #28a745;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        
+        .download-link:hover {
+            background: #218838;
+        }
+        
+        .progress-container {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            text-align: center;
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 30px 40px;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .footer h4 {
+            color: #495057;
+            margin-bottom: 15px;
+        }
+        
+        .footer p {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🦷 Tandarts Heusden</h1>
+            <p>Asset Downloader - Al je branding bestanden</p>
+        </div>
+        
+        <div class="content">
+            <div class="warning">
+                <h3>⚠️ Belangrijk: Dit zijn JOUW assets!</h3>
+                <p>
+                    Deze logo's, iconen en branding elementen zijn gemaakt voor jouw bedrijf. 
+                    Je hebt recht op deze bestanden, ongeacht wat de externe partij claimt.
+                    Download ze <strong>vandaag nog</strong> voordat ze mogelijk worden verwijderd.
+                </p>
+            </div>
+            
+            <div class="info">
+                <h3>📋 Wat krijg je:</h3>
+                <ul>
+                    <li>1 Hoofdlogo (SVG - hoogste kwaliteit)</li>
+                    <li>9 Behandeling iconen (SVG - schaalbaar)</li>
+                    <li>3 Social media iconen</li>
+                    <li>1 Inschrijfformulier (PDF)</li>
+                    <li><strong>Totaal: 14 bestanden</strong></li>
+                </ul>
+            </div>
+            
+            <div class="button-container">
+                <button class="download-btn" onclick="downloadAll()">
+                    📥 Download ALLES (14 bestanden)
+                </button>
+            </div>
+            
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">
+                    0 / 14 bestanden gedownload
+                </div>
+            </div>
+            
+            <div class="asset-list">
+                <div class="asset-category">
+                    <h3>Logo</h3>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Tandarts Heusden Logo</span>
+                            <span class="asset-type">SVG</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73b197db8f86a_logo-TH-RGB-diap-lijn%2Btekst.svg" 
+                           class="download-link" download="logo-tandarts-heusden.svg">Download</a>
+                    </div>
+                </div>
+                
+                <div class="asset-category">
+                    <h3>Behandeling Iconen</h3>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Mondhygiëne</span>
+                            <span class="asset-type">SVG</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73b025eb8f9e1_iconen-TH-mondhygiene.svg" 
+                           class="download-link" download="icoon-mondhygiene.svg">Download</a>
+                    </div>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Periodieke Controle</span>
+                            <span class="asset-type">SVG</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73b9b9fb8f980_iconen-TH-periodieke-controle.svg" 
+                           class="download-link" download="icoon-periodieke-controle.svg">Download</a>
+                    </div>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Orthodontie (Beugels)</span>
+                            <span class="asset-type">SVG</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73bead5b8f9bc_iconen-TH-orthodontie.svg" 
+                           class="download-link" download="icoon-orthodontie.svg">Download</a>
+                    </div>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Zenuwkanaal</span>
+                            <span class="asset-type">SVG</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73bb89ab8f9ce_iconen-TH-zenuwkanaal.svg" 
+                           class="download-link" download="icoon-zenuwkanaal.svg">Download</a>
+                    </div>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Vullingen</span>
+                            <span class="asset-type">SVG</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73b9c7eb8f9b9_iconen-TH-vullingen.svg" 
+                           class="download-link" download="icoon-vullingen.svg">Download</a>
+                    </div>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Tanden Bleken</span>
+                            <span class="asset-type">SVG</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73b3ac0b8f973_iconen-TH-tanden-bleken.svg" 
+                           class="download-link" download="icoon-tanden-bleken.svg">Download</a>
+                    </div>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Kronen</span>
+                            <span class="asset-type">SVG</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73be65db8f9ba_iconen-TH-kronen.svg" 
+                           class="download-link" download="icoon-kronen.svg">Download</a>
+                    </div>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Implantaten</span>
+                            <span class="asset-type">SVG</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73bb1b9b8f978_iconen-TH-implantaten.svg" 
+                           class="download-link" download="icoon-implantaten.svg">Download</a>
+                    </div>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Digital Smile Design</span>
+                            <span class="asset-type">SVG</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73b3ceab8f98e_iconen-TH-digital-smile-design.svg" 
+                           class="download-link" download="icoon-digital-smile-design.svg">Download</a>
+                    </div>
+                </div>
+                
+                <div class="asset-category">
+                    <h3>Social Media</h3>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Facebook</span>
+                            <span class="asset-type">PNG</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73ba8b2b8f880_Icon-facebook.png" 
+                           class="download-link" download="social-facebook.png">Download</a>
+                    </div>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Instagram</span>
+                            <span class="asset-type">SVG</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73ba4e0b8f891_instagram.svg" 
+                           class="download-link" download="social-instagram.svg">Download</a>
+                    </div>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Twitter</span>
+                            <span class="asset-type">PNG</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73befa9b8f8bd_Icon-twitter.png" 
+                           class="download-link" download="social-twitter.png">Download</a>
+                    </div>
+                </div>
+                
+                <div class="asset-category">
+                    <h3>Documenten</h3>
+                    <div class="asset-item">
+                        <div>
+                            <span class="asset-name">Inschrijfformulier</span>
+                            <span class="asset-type">PDF</span>
+                        </div>
+                        <a href="https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/677d28f5f0083027ef59f5e1_8e4075182fb6b1e429b0e9fd22a2fc78_TH-inschrijfformulier.pdf" 
+                           class="download-link" download="inschrijfformulier.pdf">Download</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <h4>💡 Volgende stappen:</h4>
+            <p>1. Download alle bestanden en bewaar ze veilig</p>
+            <p>2. Maak een backup in de cloud (Google Drive/Dropbox)</p>
+            <p>3. Gebruik deze bestanden in je juridische claim</p>
+            <p>4. Deze assets zijn JOUW EIGENDOM - je mag ze altijd gebruiken</p>
+        </div>
+    </div>
+    
+    <script>
+        const assets = [
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73b197db8f86a_logo-TH-RGB-diap-lijn%2Btekst.svg", name: "logo-tandarts-heusden.svg"},
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73b025eb8f9e1_iconen-TH-mondhygiene.svg", name: "icoon-mondhygiene.svg"},
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73b9b9fb8f980_iconen-TH-periodieke-controle.svg", name: "icoon-periodieke-controle.svg"},
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73bead5b8f9bc_iconen-TH-orthodontie.svg", name: "icoon-orthodontie.svg"},
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73bb89ab8f9ce_iconen-TH-zenuwkanaal.svg", name: "icoon-zenuwkanaal.svg"},
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73b9c7eb8f9b9_iconen-TH-vullingen.svg", name: "icoon-vullingen.svg"},
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73b3ac0b8f973_iconen-TH-tanden-bleken.svg", name: "icoon-tanden-bleken.svg"},
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73be65db8f9ba_iconen-TH-kronen.svg", name: "icoon-kronen.svg"},
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73bb1b9b8f978_iconen-TH-implantaten.svg", name: "icoon-implantaten.svg"},
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73b3ceab8f98e_iconen-TH-digital-smile-design.svg", name: "icoon-digital-smile-design.svg"},
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73ba8b2b8f880_Icon-facebook.png", name: "social-facebook.png"},
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73ba4e0b8f891_instagram.svg", name: "social-instagram.svg"},
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/5e6f37f339a73befa9b8f8bd_Icon-twitter.png", name: "social-twitter.png"},
+            {url: "https://cdn.prod.website-files.com/5e6f37f339a73bc0feb8f81e/677d28f5f0083027ef59f5e1_8e4075182fb6b1e429b0e9fd22a2fc78_TH-inschrijfformulier.pdf", name: "inschrijfformulier.pdf"}
+        ];
+        
+        function downloadAll() {
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            progressContainer.style.display = 'block';
+            
+            let count = 0;
+            const total = assets.length;
+            
+            assets.forEach((asset, index) => {
+                setTimeout(() => {
+                    const link = document.createElement('a');
+                    link.href = asset.url;
+                    link.download = asset.name;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    count++;
+                    const percentage = (count / total) * 100;
+                    progressFill.style.width = percentage + '%';
+                    progressText.textContent = `${count} / ${total} bestanden gedownload`;
+                    
+                    if (count === total) {
+                        setTimeout(() => {
+                            alert('✅ Alle bestanden zijn gedownload!\n\nCheck je Downloads map en bewaar de bestanden veilig.');
+                        }, 500);
+                    }
+                }, index * 500); // 500ms tussen elke download
+            });
+        }
+    </script>
+</body>
+</html>
