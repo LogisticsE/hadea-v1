@@ -37,7 +37,7 @@ prisma/migrations/*
 
 # Uploads
 uploads/
-documents/
+/documents/
 temp/
 
 # IDE
