@@ -175,6 +175,86 @@ async function main() {
   console.log(`✅ Seeded ${scenariosData.length} shipping scenarios`);
 
   // ═══════════════════════════════════════════════════════════════════
+  // SEED LABEL TEMPLATES (Default templates for document generation)
+  // ═══════════════════════════════════════════════════════════════════
+  console.log('📄 Seeding label templates...');
+
+  const labelTemplatesData = [
+    {
+      name: 'Default Outbound Content Label',
+      type: 'OUTBOUND_CONTENT' as const,
+      description: 'Standard box content label for outbound shipments to sites',
+      includeContractInfo: true,
+      includeItemsTable: true,
+      includeBarcode: false,
+      includeLogo: true,
+      headerText: 'Box Contents Label',
+      pageSize: 'A4',
+      orientation: 'portrait',
+      isDefault: true,
+      layoutConfig: {
+        sections: [
+          { type: 'header', title: 'Box Contents Label' },
+          { type: 'contractInfo', fields: ['contractingAuthority', 'contractor', 'contractNumber', 'contractDate'] },
+          { type: 'deliveryInfo', fields: ['deliveryAddress', 'expectedDeliveryDate'] },
+          { type: 'itemsTable', columns: ['description', 'quantity', 'unit'] },
+        ],
+      },
+    },
+    {
+      name: 'Default Sample Content Label',
+      type: 'SAMPLE_CONTENT' as const,
+      description: 'Standard box content label for sample return shipments to labs',
+      includeContractInfo: true,
+      includeItemsTable: true,
+      includeBarcode: true,
+      includeLogo: true,
+      headerText: 'Sample Contents Label',
+      pageSize: 'A4',
+      orientation: 'portrait',
+      isDefault: true,
+      layoutConfig: {
+        sections: [
+          { type: 'header', title: 'Sample Contents Label' },
+          { type: 'contractInfo', fields: ['contractingAuthority', 'contractor', 'contractNumber', 'contractDate'] },
+          { type: 'labInfo', fields: ['labAddress', 'expectedArrivalDate'] },
+          { type: 'barcodeSection', fields: ['barcodeSequence', 'barcodeCount'] },
+          { type: 'itemsTable', columns: ['description', 'quantity', 'unit'] },
+        ],
+      },
+    },
+    {
+      name: 'Default Non-ADR Declaration',
+      type: 'NON_ADR' as const,
+      description: 'Non-ADR dangerous goods declaration for sample shipments',
+      includeContractInfo: false,
+      includeItemsTable: false,
+      includeBarcode: false,
+      includeLogo: true,
+      headerText: 'Non-ADR Declaration',
+      pageSize: 'A4',
+      orientation: 'portrait',
+      isDefault: true,
+      layoutConfig: {
+        sections: [
+          { type: 'header', title: 'Declaration of Non-Dangerous Goods' },
+          { type: 'declarationText' },
+          { type: 'signature' },
+        ],
+      },
+    },
+  ];
+
+  for (const template of labelTemplatesData) {
+    await prisma.labelTemplate.upsert({
+      where: { name: template.name },
+      update: {},
+      create: template,
+    });
+  }
+  console.log(`✅ Seeded ${labelTemplatesData.length} label templates`);
+
+  // ═══════════════════════════════════════════════════════════════════
   // SEED USERS
   // ═══════════════════════════════════════════════════════════════════
 

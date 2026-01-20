@@ -117,6 +117,16 @@ enum AuditAction {
   DELETE
 }
 
+// Label template types for document generation
+enum LabelTemplateType {
+  OUTBOUND_CONTENT    // Box content label for outbound shipment
+  SAMPLE_CONTENT      // Box content label for sample return
+  SHIPPING_LABEL      // Carrier shipping label
+  COMMERCIAL_INVOICE  // Customs invoice
+  NON_ADR            // Non-ADR declaration
+  PACKING_LIST       // Packing list
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // USERS & AUTHENTICATION
 // ═══════════════════════════════════════════════════════════════════
@@ -420,11 +430,57 @@ model Kit {
   // Relations
   items         KitItem[]
   orders        Order[]
+  labelTemplates LabelTemplate[]
 
   @@index([code])
   @@index([legacyNr])
   @@index([isActive])
   @@map("kits")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LABEL TEMPLATES (for document generation)
+// ═══════════════════════════════════════════════════════════════════
+
+model LabelTemplate {
+  id              String            @id @default(cuid())
+  name            String            @unique
+  type            LabelTemplateType
+  description     String?           @db.Text
+
+  // Layout configuration (JSON structure for field positions, styling)
+  layoutConfig    Json?             @map("layout_config")
+
+  // Content options
+  includeContractInfo   Boolean     @default(true) @map("include_contract_info")
+  includeItemsTable     Boolean     @default(true) @map("include_items_table")
+  includeBarcode        Boolean     @default(false) @map("include_barcode")
+  includeLogo           Boolean     @default(true) @map("include_logo")
+
+  // Custom text overrides
+  headerText      String?           @map("header_text") @db.VarChar(255)
+  footerText      String?           @map("footer_text") @db.Text
+
+  // Page settings
+  pageSize        String            @default("A4") @map("page_size") @db.VarChar(20)
+  orientation     String            @default("portrait") @db.VarChar(20)
+
+  // Linked kit (optional - can be default/global template)
+  kitId           String?           @map("kit_id")
+  kit             Kit?              @relation(fields: [kitId], references: [id])
+
+  // Status
+  isDefault       Boolean           @default(false) @map("is_default")
+  isActive        Boolean           @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  @@index([type])
+  @@index([kitId])
+  @@index([isDefault, type])
+  @@map("label_templates")
 }
 
 model StockItem {
