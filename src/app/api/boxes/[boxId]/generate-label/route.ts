@@ -187,7 +187,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
 
     // Return the PDF as a download
-    return new NextResponse(generatedDoc.fileBuffer, {
+    const buffer = Buffer.from(generatedDoc.fileBuffer);
+    return new NextResponse(buffer, {
       status: 200,
       headers: {
         'Content-Type': generatedDoc.mimeType,
