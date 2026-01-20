@@ -77,6 +77,46 @@ enum UserRole {
   VIEWER
 }
 
+// Geographic region classification (for shipping scenario lookup)
+enum GeographicRegion {
+  EU
+  NON_EU_EUROPE  // Maps to 'Non-EU Europe' in AREA sheet
+  NON_EUROPE     // Maps to 'Non-Europe' in AREA sheet
+}
+
+// Item category for BOM classification
+enum ItemCategory {
+  TUBE
+  CONTAINER
+  PACKAGING
+  DOCUMENTATION
+  LABEL
+  ABSORBENT
+  COOLING
+  OTHER
+}
+
+// Box-level status tracking
+enum BoxStatus {
+  PENDING
+  PACKED
+  SHIPPED_OUTBOUND
+  AT_SITE
+  SHIPPED_SAMPLE
+  AT_LAB
+  COMPLETED
+  LOST
+  DAMAGED
+  RETURNED
+}
+
+// Audit log actions
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // USERS & AUTHENTICATION
 // ═══════════════════════════════════════════════════════════════════
@@ -93,9 +133,74 @@ model User {
   
   // Relations
   approvedOrders   Order[]         @relation("ApprovedBy")
+  collectionBookedOrders Order[]   @relation("CollectionBookedBy")
   stockMovements   StockMovement[]
-  
+
+  // OrderBox relations
+  outboundLabelsCreated OrderBox[] @relation("OutboundLabelCreatedBy")
+  sampleLabelsCreated   OrderBox[] @relation("SampleLabelCreatedBy")
+  boxesPicked           OrderBox[] @relation("BoxPickedBy")
+  boxesChecked          OrderBox[] @relation("BoxCheckedBy")
+  boxesVerified         OrderBox[] @relation("BoxVerifiedBy")
+
+  // Audit
+  auditLogs             AuditLog[]
+
   @@map("users")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// REFERENCE TABLES
+// ═══════════════════════════════════════════════════════════════════
+
+model Country {
+  code      String           @id @db.Char(2)
+  name      String           @db.VarChar(100)
+  region    GeographicRegion
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  sites     Site[]
+  labs      Lab[]
+  stockItems StockItem[]     @relation("ItemCountryOfOrigin")
+
+  @@map("countries")
+}
+
+model ShippingScenario {
+  id              String           @id @default(cuid())
+  scenarioNumber  Int              @unique @map("scenario_number")
+  regionFrom      GeographicRegion @map("region_from")
+  regionTo        GeographicRegion @map("region_to")
+  combi           String           @unique @db.VarChar(50)
+  itemNo          Int              @map("item_no")
+  description     String           @db.Text
+  requiresCustoms Boolean          @default(false) @map("requires_customs")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  orders          Order[]
+
+  @@unique([regionFrom, regionTo])
+  @@map("shipping_scenarios")
+}
+
+model ShippingAccount {
+  id            String      @id @default(cuid())
+  carrier       CarrierType
+  accountNumber String      @map("account_number") @db.VarChar(100)
+  accountName   String?     @map("account_name") @db.VarChar(255)
+  description   String?     @db.Text
+  isDefault     Boolean     @default(false) @map("is_default")
+  isActive      Boolean     @default(true) @map("is_active")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  outboundBoxes OrderBox[]  @relation("OutboundAccount")
+  sampleBoxes   OrderBox[]  @relation("SampleAccount")
+
+  @@map("shipping_accounts")
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -104,33 +209,69 @@ model User {
 
 model Site {
   id            String    @id @default(cuid())
+  legacyId      String?   @unique @map("legacy_id") @db.VarChar(50)
   name          String
   code          String    @unique
-  
+  companyOrName String?   @map("company_or_name") @db.VarChar(255)
+
+  // Contact Information
+  telephone     String?   @db.VarChar(50)
+  telephoneExt  String?   @map("telephone_ext") @db.VarChar(20)
+  consigneeEmail String?  @map("consignee_email") @db.VarChar(255)
+
   // Address
   addressLine1  String    @map("address_line1")
   addressLine2  String?   @map("address_line2")
+  addressLine3  String?   @map("address_line3") @db.VarChar(255)
   city          String
   stateProvince String?   @map("state_province")
   postalCode    String    @map("postal_code")
   countryCode   String    @map("country_code")
   countryName   String    @map("country_name")
-  
-  // Classification
+  residentialInd Boolean  @default(false) @map("residential_ind")
+  deliveryAddress String? @map("delivery_address") @db.Text
+
+  // Alternative Names (for label generation)
+  fromSiteName  String?   @map("from_site_name") @db.VarChar(255)
+  fromSite2     String?   @map("from_site_2") @db.VarChar(255)
+  fromSite3     String?   @map("from_site_3") @db.VarChar(255)
+  fromSite4     String?   @map("from_site_4") @db.VarChar(255)
+  fromSite5     String?   @map("from_site_5") @db.VarChar(255)
+
+  // Pickup/Collection Information
+  pickupTimeFrom String?  @map("pickup_time_from") @db.VarChar(10)
+  pickupTimeTo   String?  @map("pickup_time_to") @db.VarChar(10)
+  preferredCollectionLocation String? @map("preferred_collection_location") @db.Text
+
+  // Region Classification
+  region        GeographicRegion?
   isEU          Boolean   @default(true) @map("is_eu")
+
+  // Default Forwarders
+  outboundVia   CarrierType? @map("outbound_via")
+  sampleVia     CarrierType? @map("sample_via")
+
+  // Status
   isActive      Boolean   @default(true) @map("is_active")
+
+  // Notes
   notes         String?   @db.Text
-  
+  internalNotes String?   @map("internal_notes") @db.Text
+  additionalNotes String? @map("additional_notes") @db.Text
+
   // Timestamps
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
-  
+
   // Relations
+  country       Country?  @relation(fields: [countryCode], references: [code])
   contacts      SiteContact[]
   orders        Order[]
-  
+
   @@index([code])
+  @@index([legacyId])
   @@index([countryCode])
+  @@index([region])
   @@index([isActive])
   @@map("sites")
 }
@@ -161,32 +302,53 @@ model SiteContact {
 
 model Lab {
   id            String    @id @default(cuid())
+  legacyId      String?   @unique @map("legacy_id") @db.VarChar(50)
   name          String
   code          String    @unique
-  
+  companyOrName String?   @map("company_or_name") @db.VarChar(255)
+
+  // Contact Information
+  telephone     String?   @db.VarChar(50)
+  telephoneExt  String?   @map("telephone_ext") @db.VarChar(20)
+  consigneeEmail String?  @map("consignee_email") @db.VarChar(255)
+
   // Address
   addressLine1  String    @map("address_line1")
   addressLine2  String?   @map("address_line2")
+  addressLine3  String?   @map("address_line3") @db.VarChar(255)
   city          String
   stateProvince String?   @map("state_province")
   postalCode    String    @map("postal_code")
   countryCode   String    @map("country_code")
   countryName   String    @map("country_name")
-  
-  // Classification
+  residentialInd Boolean  @default(false) @map("residential_ind")
+  deliveryAddress String? @map("delivery_address") @db.Text
+  preferredCollectionLocation String? @map("preferred_collection_location") @db.Text
+
+  // Region Classification
+  region        GeographicRegion?
   isEU          Boolean   @default(true) @map("is_eu")
+
+  // Status
   isActive      Boolean   @default(true) @map("is_active")
+
+  // Notes
   notes         String?   @db.Text
-  
+  internalNotes String?   @map("internal_notes") @db.Text
+
   // Timestamps
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
-  
+
   // Relations
+  country       Country?  @relation(fields: [countryCode], references: [code])
   contacts      LabContact[]
   orders        Order[]
-  
+
   @@index([code])
+  @@index([legacyId])
+  @@index([countryCode])
+  @@index([region])
   @@index([isActive])
   @@map("labs")
 }
@@ -217,28 +379,50 @@ model LabContact {
 
 model Kit {
   id            String    @id @default(cuid())
+  legacyNr      Int?      @unique @map("legacy_nr")
   name          String
   code          String    @unique
   description   String?   @db.Text
-  
-  // Dimensions (for shipping)
+
+  // Box Dimensions (outer box that contains the kit)
+  boxLengthCm   Float?    @map("box_length_cm")
+  boxWidthCm    Float?    @map("box_width_cm")
+  boxHeightCm   Float?    @map("box_height_cm")
+  boxWeightEmptyGrams Float? @map("box_weight_empty_grams")
+
+  // Legacy dimensions (kept for backwards compatibility)
   totalWeight   Float     @map("total_weight")
   length        Float
   width         Float
   height        Float
-  
+
+  // Calculated total weight (including all items)
+  totalWeightGrams Float? @map("total_weight_grams")
+
+  // Templates
+  boxContentTemplateOutbound String? @map("box_content_template_outbound") @db.VarChar(255)
+  boxContentTemplateSample   String? @map("box_content_template_sample") @db.VarChar(255)
+  templatePath  String?   @map("template_path") @db.Text
+
+  // Shipping Properties
+  isUrgent      Boolean   @default(false) @map("is_urgent")
+  requiresCustomsDocs Boolean @default(false) @map("requires_customs_docs")
+  requiresNonadr Boolean  @default(false) @map("requires_nonadr")
+
   // Status
   isActive      Boolean   @default(true) @map("is_active")
-  
+  notes         String?   @db.Text
+
   // Timestamps
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
-  
+
   // Relations
   items         KitItem[]
   orders        Order[]
-  
+
   @@index([code])
+  @@index([legacyNr])
   @@index([isActive])
   @@map("kits")
 }
@@ -248,33 +432,56 @@ model StockItem {
   name            String
   sku             String    @unique
   description     String?   @db.Text
-  
+  category        ItemCategory @default(OTHER)
+
   // Inventory
   quantity        Int       @default(0)
   minStockLevel   Int       @default(0) @map("min_stock_level")
-  
+
   // Pricing (for commercial invoice)
   unitPrice       Float     @map("unit_price")
   currency        String    @default("EUR")
-  
+
   // Physical properties
   unitWeight      Float     @map("unit_weight")
+  weightGrams     Float?    @map("weight_grams")
   length          Float?
   width           Float?
   height          Float?
-  
+  volumeMl        Float?    @map("volume_ml")
+
+  // Supplier Information
+  supplierName    String?   @map("supplier_name") @db.VarChar(255)
+  supplierItemCode String?  @map("supplier_item_code") @db.VarChar(100)
+
+  // Customs/Shipping Info (for international shipments)
+  hsCode          String?   @map("hs_code") @db.VarChar(20)
+  countryOfOriginCode String? @map("country_of_origin_code") @db.Char(2)
+  customsDescription String? @map("customs_description") @db.Text
+  customsValueEur Float?    @map("customs_value_eur")
+
+  // Regulatory/Safety
+  isDangerousGoods Boolean  @default(false) @map("is_dangerous_goods")
+  unNumber        String?   @map("un_number") @db.VarChar(10)
+  requiresColdChain Boolean @default(false) @map("requires_cold_chain")
+  storageTempMinC Float?    @map("storage_temp_min_c")
+  storageTempMaxC Float?    @map("storage_temp_max_c")
+
   // Status
   isActive        Boolean   @default(true) @map("is_active")
-  
+  notes           String?   @db.Text
+
   // Timestamps
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
-  
+
   // Relations
+  countryOfOrigin Country?  @relation("ItemCountryOfOrigin", fields: [countryOfOriginCode], references: [code])
   kitItems        KitItem[]
   movements       StockMovement[]
-  
+
   @@index([sku])
+  @@index([category])
   @@index([quantity, minStockLevel])
   @@map("stock_items")
 }
@@ -284,13 +491,19 @@ model KitItem {
   kitId         String    @map("kit_id")
   stockItemId   String    @map("stock_item_id")
   quantity      Int       @default(1)
+  isRequired    Boolean   @default(true) @map("is_required")
+  sortOrder     Int       @default(0) @map("sort_order")
+  notes         String?   @db.Text
   createdAt     DateTime  @default(now()) @map("created_at")
-  
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
   // Relations
   kit           Kit       @relation(fields: [kitId], references: [id], onDelete: Cascade)
   stockItem     StockItem @relation(fields: [stockItemId], references: [id])
-  
+
   @@unique([kitId, stockItemId])
+  @@index([kitId])
+  @@index([stockItemId])
   @@map("kit_items")
 }
 
@@ -324,59 +537,196 @@ model StockMovement {
 model Order {
   id                String        @id @default(cuid())
   orderNumber       String        @unique @map("order_number")
-  
+
   // References
   siteId            String        @map("site_id")
   labId             String        @map("lab_id")
   kitId             String        @map("kit_id")
   siteContactId     String        @map("site_contact_id")
   labContactId      String        @map("lab_contact_id")
-  
+  shippingScenarioId String?      @map("shipping_scenario_id")
+
   // Order details
   quantity          Int           @default(1)
   status            OrderStatus   @default(DRAFT)
-  
+  sampleType        String?       @map("sample_type") @db.VarChar(100)
+  outboundType      String?       @map("outbound_type") @db.VarChar(100)
+
   // Key dates
   samplingDate      DateTime      @map("sampling_date")
   outboundShipDate  DateTime      @map("outbound_ship_date")
-  
+  confirmedSamplingDate DateTime? @map("confirmed_sampling_date")
+  confirmedPickupDate DateTime?   @map("confirmed_pickup_date")
+  outboundShippingDate DateTime?  @map("outbound_shipping_date")
+
   // Carrier selection
   outboundCarrier   CarrierType   @map("outbound_carrier")
   sampleCarrier     CarrierType   @map("sample_carrier")
-  
+
+  // Collection Info
+  collectionBookedById String?    @map("collection_booked_by_id")
+  collectionBookedByName String?  @map("collection_booked_by_name") @db.VarChar(255)
+  collectionId      String?       @map("collection_id") @db.VarChar(100)
+
   // Customs
   requiresCustomsDocs Boolean     @default(false) @map("requires_customs_docs")
-  
+
   // Approval
   approvedAt        DateTime?     @map("approved_at")
   approvedById      String?       @map("approved_by_id")
-  
+
   // Notes
   notes             String?       @db.Text
-  
+
   // Timestamps
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
-  
+
   // Relations
   site              Site          @relation(fields: [siteId], references: [id])
   lab               Lab           @relation(fields: [labId], references: [id])
   kit               Kit           @relation(fields: [kitId], references: [id])
   siteContact       SiteContact   @relation("SiteContactOrders", fields: [siteContactId], references: [id])
   labContact        LabContact    @relation("LabContactOrders", fields: [labContactId], references: [id])
+  shippingScenario  ShippingScenario? @relation(fields: [shippingScenarioId], references: [id])
   approvedBy        User?         @relation("ApprovedBy", fields: [approvedById], references: [id])
-  
+  collectionBookedBy User?        @relation("CollectionBookedBy", fields: [collectionBookedById], references: [id])
+
   shipments         Shipment[]
   documents         Document[]
   stockMovements    StockMovement[]
-  
+  orderBoxes        OrderBox[]
+
   @@index([status])
   @@index([samplingDate])
   @@index([outboundShipDate])
   @@index([siteId])
   @@index([labId])
+  @@index([shippingScenarioId])
   @@index([createdAt])
   @@map("orders")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ORDER BOXES (Critical: Links Outbound + Sample Waybills)
+// ═══════════════════════════════════════════════════════════════════
+
+model OrderBox {
+  id            String    @id @default(cuid())
+  orderId       String    @map("order_id")
+  boxNumber     Int       @map("box_number")
+
+  // OUTBOUND SHIPMENT INFO
+  outboundWaybill String? @map("outbound_waybill") @db.VarChar(100)
+  outboundLabelCreatedById String? @map("outbound_label_created_by_id")
+  outboundLabelCreatedByName String? @map("outbound_label_created_by_name") @db.VarChar(255)
+  outboundAccountId String? @map("outbound_account_id")
+  outboundAccountName String? @map("outbound_account_name") @db.VarChar(255)
+  boxContentGeneratedOutbound Boolean @default(false) @map("box_content_generated_outbound")
+  outboundLabelCreatedAt DateTime? @map("outbound_label_created_at")
+
+  // SAMPLE SHIPMENT INFO
+  sampleWaybill String?   @map("sample_waybill") @db.VarChar(100)
+  sampleLabelCreatedById String? @map("sample_label_created_by_id")
+  sampleLabelCreatedByName String? @map("sample_label_created_by_name") @db.VarChar(255)
+  sampleAccountId String?  @map("sample_account_id")
+  sampleAccountName String? @map("sample_account_name") @db.VarChar(255)
+  boxContentGeneratedSample Boolean @default(false) @map("box_content_generated_sample")
+  nonadrGenerated Boolean  @default(false) @map("nonadr_generated")
+  sampleLabelCreatedAt DateTime? @map("sample_label_created_at")
+
+  // BOX CONTENTS (Barcodes/Samples)
+  barcodeSequence String?  @map("barcode_sequence") @db.VarChar(255)
+  barcodeStart    String?  @map("barcode_start") @db.VarChar(50)
+  barcodeEnd      String?  @map("barcode_end") @db.VarChar(50)
+  barcodeCount    Int?     @map("barcode_count")
+  barcodeDetails  Json?    @map("barcode_details")
+
+  // WAREHOUSE OPERATIONS
+  boxPickedById   String?  @map("box_picked_by_id")
+  boxPickedByName String?  @map("box_picked_by_name") @db.VarChar(255)
+  boxPickedAt     DateTime? @map("box_picked_at")
+  boxCheckedById  String?  @map("box_checked_by_id")
+  boxCheckedByName String? @map("box_checked_by_name") @db.VarChar(255)
+  boxCheckedAt    DateTime? @map("box_checked_at")
+
+  // NOTIFICATIONS
+  notifiedSimona  Boolean  @default(false) @map("notified_simona")
+  notifiedAt      DateTime? @map("notified_at")
+
+  // STATUS & EXCEPTIONS
+  status          BoxStatus @default(PENDING)
+  exception       String?  @db.Text
+
+  // DATA QUALITY FLAGS (for migration from Excel)
+  isMigratedData  Boolean  @default(false) @map("is_migrated_data")
+  waybillMatchVerified Boolean @default(true) @map("waybill_match_verified")
+  verificationNotes String? @map("verification_notes") @db.Text
+  verifiedById    String?  @map("verified_by_id")
+  verifiedAt      DateTime? @map("verified_at")
+
+  // Timestamps
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  outboundLabelCreatedBy User? @relation("OutboundLabelCreatedBy", fields: [outboundLabelCreatedById], references: [id])
+  sampleLabelCreatedBy User? @relation("SampleLabelCreatedBy", fields: [sampleLabelCreatedById], references: [id])
+  outboundAccount ShippingAccount? @relation("OutboundAccount", fields: [outboundAccountId], references: [id])
+  sampleAccount   ShippingAccount? @relation("SampleAccount", fields: [sampleAccountId], references: [id])
+  boxPickedBy     User?    @relation("BoxPickedBy", fields: [boxPickedById], references: [id])
+  boxCheckedBy    User?    @relation("BoxCheckedBy", fields: [boxCheckedById], references: [id])
+  verifiedBy      User?    @relation("BoxVerifiedBy", fields: [verifiedById], references: [id])
+
+  boxImages       BoxImage[]
+  boxDocuments    BoxDocument[]
+
+  @@unique([orderId, boxNumber])
+  @@index([orderId])
+  @@index([outboundWaybill])
+  @@index([sampleWaybill])
+  @@index([status])
+  @@index([barcodeSequence])
+  @@map("order_boxes")
+}
+
+model BoxImage {
+  id          String    @id @default(cuid())
+  boxId       String    @map("box_id")
+  imageType   String    @map("image_type") @db.VarChar(50)
+  fileName    String    @map("file_name") @db.VarChar(255)
+  filePath    String    @map("file_path") @db.VarChar(500)
+  fileSize    Int?      @map("file_size")
+  mimeType    String?   @map("mime_type") @db.VarChar(100)
+  description String?   @db.Text
+  uploadedById String?  @map("uploaded_by_id")
+  uploadedAt  DateTime  @default(now()) @map("uploaded_at")
+
+  // Relations
+  box         OrderBox  @relation(fields: [boxId], references: [id], onDelete: Cascade)
+
+  @@index([boxId])
+  @@map("box_images")
+}
+
+model BoxDocument {
+  id            String    @id @default(cuid())
+  boxId         String    @map("box_id")
+  documentType  String    @map("document_type") @db.VarChar(50)
+  fileName      String    @map("file_name") @db.VarChar(255)
+  filePath      String    @map("file_path") @db.VarChar(500)
+  fileSize      Int?      @map("file_size")
+  mimeType      String?   @map("mime_type") @db.VarChar(100)
+  description   String?   @db.Text
+  generatedById String?   @map("generated_by_id")
+  generatedAt   DateTime  @default(now()) @map("generated_at")
+
+  // Relations
+  box           OrderBox  @relation(fields: [boxId], references: [id], onDelete: Cascade)
+
+  @@index([boxId])
+  @@map("box_documents")
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -519,6 +869,32 @@ model HadeaConfig {
   isActive                  Boolean   @default(true) @map("is_active")
   createdAt                 DateTime  @default(now()) @map("created_at")
   updatedAt                 DateTime  @updatedAt @map("updated_at")
-  
+
   @@map("hadea_configs")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════════════════════════════════
+
+model AuditLog {
+  id            String      @id @default(cuid())
+  entityType    String      @map("entity_type") @db.VarChar(50)
+  entityId      String      @map("entity_id")
+  action        AuditAction
+  changedFields Json?       @map("changed_fields")
+  oldValues     Json?       @map("old_values")
+  newValues     Json?       @map("new_values")
+  changedById   String?     @map("changed_by_id")
+  changedAt     DateTime    @default(now()) @map("changed_at")
+  ipAddress     String?     @map("ip_address") @db.VarChar(45)
+  userAgent     String?     @map("user_agent") @db.Text
+
+  // Relations
+  changedBy     User?       @relation(fields: [changedById], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([changedAt])
+  @@index([changedById])
+  @@map("audit_log")
 }

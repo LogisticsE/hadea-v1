@@ -5,6 +5,179 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
 
+  // ═══════════════════════════════════════════════════════════════════
+  // SEED COUNTRIES (Reference data - must be first)
+  // ═══════════════════════════════════════════════════════════════════
+  console.log('📍 Seeding countries...');
+
+  const countriesData = [
+    // EU Countries (27)
+    { code: 'AT', name: 'Austria', region: 'EU' as const },
+    { code: 'BE', name: 'Belgium', region: 'EU' as const },
+    { code: 'BG', name: 'Bulgaria', region: 'EU' as const },
+    { code: 'HR', name: 'Croatia', region: 'EU' as const },
+    { code: 'CY', name: 'Cyprus', region: 'EU' as const },
+    { code: 'CZ', name: 'Czech Republic', region: 'EU' as const },
+    { code: 'DK', name: 'Denmark', region: 'EU' as const },
+    { code: 'EE', name: 'Estonia', region: 'EU' as const },
+    { code: 'FI', name: 'Finland', region: 'EU' as const },
+    { code: 'FR', name: 'France', region: 'EU' as const },
+    { code: 'DE', name: 'Germany', region: 'EU' as const },
+    { code: 'GR', name: 'Greece', region: 'EU' as const },
+    { code: 'HU', name: 'Hungary', region: 'EU' as const },
+    { code: 'IE', name: 'Ireland', region: 'EU' as const },
+    { code: 'IT', name: 'Italy', region: 'EU' as const },
+    { code: 'LV', name: 'Latvia', region: 'EU' as const },
+    { code: 'LT', name: 'Lithuania', region: 'EU' as const },
+    { code: 'LU', name: 'Luxembourg', region: 'EU' as const },
+    { code: 'MT', name: 'Malta', region: 'EU' as const },
+    { code: 'NL', name: 'Netherlands', region: 'EU' as const },
+    { code: 'PL', name: 'Poland', region: 'EU' as const },
+    { code: 'PT', name: 'Portugal', region: 'EU' as const },
+    { code: 'RO', name: 'Romania', region: 'EU' as const },
+    { code: 'SK', name: 'Slovakia', region: 'EU' as const },
+    { code: 'SI', name: 'Slovenia', region: 'EU' as const },
+    { code: 'ES', name: 'Spain', region: 'EU' as const },
+    { code: 'SE', name: 'Sweden', region: 'EU' as const },
+    // Non-EU Europe (12)
+    { code: 'GB', name: 'United Kingdom', region: 'NON_EU_EUROPE' as const },
+    { code: 'CH', name: 'Switzerland', region: 'NON_EU_EUROPE' as const },
+    { code: 'NO', name: 'Norway', region: 'NON_EU_EUROPE' as const },
+    { code: 'IS', name: 'Iceland', region: 'NON_EU_EUROPE' as const },
+    { code: 'RS', name: 'Serbia', region: 'NON_EU_EUROPE' as const },
+    { code: 'UA', name: 'Ukraine', region: 'NON_EU_EUROPE' as const },
+    { code: 'BA', name: 'Bosnia and Herzegovina', region: 'NON_EU_EUROPE' as const },
+    { code: 'ME', name: 'Montenegro', region: 'NON_EU_EUROPE' as const },
+    { code: 'MK', name: 'North Macedonia', region: 'NON_EU_EUROPE' as const },
+    { code: 'AL', name: 'Albania', region: 'NON_EU_EUROPE' as const },
+    { code: 'MD', name: 'Moldova', region: 'NON_EU_EUROPE' as const },
+    { code: 'TR', name: 'Turkey', region: 'NON_EU_EUROPE' as const },
+    // Non-Europe (12)
+    { code: 'US', name: 'United States', region: 'NON_EUROPE' as const },
+    { code: 'CA', name: 'Canada', region: 'NON_EUROPE' as const },
+    { code: 'AU', name: 'Australia', region: 'NON_EUROPE' as const },
+    { code: 'JP', name: 'Japan', region: 'NON_EUROPE' as const },
+    { code: 'CN', name: 'China', region: 'NON_EUROPE' as const },
+    { code: 'BR', name: 'Brazil', region: 'NON_EUROPE' as const },
+    { code: 'IN', name: 'India', region: 'NON_EUROPE' as const },
+    { code: 'ZA', name: 'South Africa', region: 'NON_EUROPE' as const },
+    { code: 'IL', name: 'Israel', region: 'NON_EUROPE' as const },
+    { code: 'SG', name: 'Singapore', region: 'NON_EUROPE' as const },
+    { code: 'KR', name: 'South Korea', region: 'NON_EUROPE' as const },
+    { code: 'MX', name: 'Mexico', region: 'NON_EUROPE' as const },
+  ];
+
+  for (const country of countriesData) {
+    await prisma.country.upsert({
+      where: { code: country.code },
+      update: {},
+      create: country,
+    });
+  }
+  console.log(`✅ Seeded ${countriesData.length} countries`);
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SEED SHIPPING SCENARIOS (AREA logic - 9 fixed scenarios)
+  // ═══════════════════════════════════════════════════════════════════
+  console.log('🚚 Seeding shipping scenarios...');
+
+  const scenariosData = [
+    {
+      scenarioNumber: 1,
+      regionFrom: 'EU' as const,
+      regionTo: 'EU' as const,
+      combi: 'EUEU',
+      itemNo: 89,
+      description: 'Pick-up service of hypothetic package as defined in the Tech. Specs. and delivery to lots 2 and 3 contractors according to Scenario 1',
+      requiresCustoms: false,
+    },
+    {
+      scenarioNumber: 2,
+      regionFrom: 'EU' as const,
+      regionTo: 'NON_EU_EUROPE' as const,
+      combi: 'EUNon-EU Europe',
+      itemNo: 90,
+      description: 'Pick-up service of hypothetic package as defined in the Tech. Specs. and delivery to lots 2 and 3 contractors according to Scenario 2',
+      requiresCustoms: true,
+    },
+    {
+      scenarioNumber: 3,
+      regionFrom: 'NON_EU_EUROPE' as const,
+      regionTo: 'EU' as const,
+      combi: 'Non-EU EuropeEU',
+      itemNo: 91,
+      description: 'Pick-up service of hypothetic package as defined in the Tech. Specs. and delivery to lots 2 and 3 contractors according to Scenario 3',
+      requiresCustoms: true,
+    },
+    {
+      scenarioNumber: 4,
+      regionFrom: 'NON_EUROPE' as const,
+      regionTo: 'EU' as const,
+      combi: 'Non-EuropeEU',
+      itemNo: 92,
+      description: 'Pick-up service of hypothetic package as defined in the Tech. Specs. and delivery to lots 2 and 3 contractors according to Scenario 4',
+      requiresCustoms: true,
+    },
+    {
+      scenarioNumber: 5,
+      regionFrom: 'NON_EUROPE' as const,
+      regionTo: 'NON_EUROPE' as const,
+      combi: 'Non-EuropeNon-Europe',
+      itemNo: 93,
+      description: 'Pick-up service of hypothetic package as defined in the Tech. Specs. and delivery to lots 2 and 3 contractors according to Scenario 5',
+      requiresCustoms: true,
+    },
+    {
+      scenarioNumber: 6,
+      regionFrom: 'NON_EUROPE' as const,
+      regionTo: 'NON_EU_EUROPE' as const,
+      combi: 'Non-EuropeNon-EU Europe',
+      itemNo: 94,
+      description: 'Pick-up service of hypothetic package as defined in the Tech. Specs. and delivery to lots 2 and 3 contractors according to Scenario 6',
+      requiresCustoms: true,
+    },
+    {
+      scenarioNumber: 7,
+      regionFrom: 'NON_EU_EUROPE' as const,
+      regionTo: 'NON_EUROPE' as const,
+      combi: 'Non-EU EuropeNon-Europe',
+      itemNo: 95,
+      description: 'Pick-up service of hypothetic package as defined in the Tech. Specs. and delivery to lots 2 and 3 contractors according to Scenario 7',
+      requiresCustoms: true,
+    },
+    {
+      scenarioNumber: 8,
+      regionFrom: 'EU' as const,
+      regionTo: 'NON_EUROPE' as const,
+      combi: 'EUNon-Europe',
+      itemNo: 96,
+      description: 'Pick-up service of hypothetic package as defined in the Tech. Specs. and delivery to lots 2 and 3 contractors according to Scenario 8',
+      requiresCustoms: true,
+    },
+    {
+      scenarioNumber: 9,
+      regionFrom: 'NON_EU_EUROPE' as const,
+      regionTo: 'NON_EU_EUROPE' as const,
+      combi: 'Non-EU EuropeNon-EU Europe',
+      itemNo: 97,
+      description: 'Pick-up service of hypothetic package as defined in the Tech. Specs. and delivery to lots 2 and 3 contractors according to Scenario 9',
+      requiresCustoms: true,
+    },
+  ];
+
+  for (const scenario of scenariosData) {
+    await prisma.shippingScenario.upsert({
+      where: { scenarioNumber: scenario.scenarioNumber },
+      update: {},
+      create: scenario,
+    });
+  }
+  console.log(`✅ Seeded ${scenariosData.length} shipping scenarios`);
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SEED USERS
+  // ═══════════════════════════════════════════════════════════════════
+
   // Create a default user
   const user = await prisma.user.upsert({
     where: { email: 'admin@hadea.com' },
@@ -25,11 +198,13 @@ async function main() {
     create: {
       name: 'Munich Research Center',
       code: 'MUC-001',
+      companyOrName: 'Munich Research Center GmbH',
       addressLine1: 'Forschungsstraße 123',
       city: 'Munich',
       postalCode: '80331',
       countryCode: 'DE',
       countryName: 'Germany',
+      region: 'EU',
       isEU: true,
     },
   });
@@ -40,11 +215,13 @@ async function main() {
     create: {
       name: 'Paris Laboratory Site',
       code: 'PAR-001',
+      companyOrName: 'Paris Laboratory Site SARL',
       addressLine1: '45 Rue de la Science',
       city: 'Paris',
       postalCode: '75005',
       countryCode: 'FR',
       countryName: 'France',
+      region: 'EU',
       isEU: true,
     },
   });
@@ -78,11 +255,13 @@ async function main() {
     create: {
       name: 'Central Analysis Laboratory',
       code: 'LAB-CENTRAL',
+      companyOrName: 'Central Analysis Laboratory NV',
       addressLine1: 'Science Park 456',
       city: 'Brussels',
       postalCode: '1000',
       countryCode: 'BE',
       countryName: 'Belgium',
+      region: 'EU',
       isEU: true,
     },
   });
@@ -191,11 +370,13 @@ async function main() {
     data: {
       name: 'Amsterdam Testing Facility',
       code: 'AMS-001',
+      companyOrName: 'Amsterdam Testing Facility BV',
       addressLine1: 'Weesperstraat 100',
       city: 'Amsterdam',
       postalCode: '1018 DN',
       countryCode: 'NL',
       countryName: 'Netherlands',
+      region: 'EU',
       isEU: true,
     },
   });
@@ -204,11 +385,13 @@ async function main() {
     data: {
       name: 'Madrid Research Institute',
       code: 'MAD-001',
+      companyOrName: 'Madrid Research Institute SL',
       addressLine1: 'Calle de Alcalá 45',
       city: 'Madrid',
       postalCode: '28014',
       countryCode: 'ES',
       countryName: 'Spain',
+      region: 'EU',
       isEU: true,
     },
   });
@@ -217,11 +400,13 @@ async function main() {
     data: {
       name: 'London Sample Center',
       code: 'LON-001',
+      companyOrName: 'London Sample Center Ltd',
       addressLine1: '123 Oxford Street',
       city: 'London',
       postalCode: 'W1D 1BS',
       countryCode: 'GB',
       countryName: 'United Kingdom',
+      region: 'NON_EU_EUROPE',
       isEU: false,
     },
   });
@@ -259,11 +444,13 @@ async function main() {
     data: {
       name: 'Northern Europe Lab',
       code: 'LAB-NORTH',
+      companyOrName: 'Northern Europe Lab AB',
       addressLine1: 'Ringvägen 52',
       city: 'Stockholm',
       postalCode: '11860',
       countryCode: 'SE',
       countryName: 'Sweden',
+      region: 'EU',
       isEU: true,
     },
   });
