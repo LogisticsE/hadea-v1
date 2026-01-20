@@ -36,6 +36,13 @@ export async function GET(
             stockItem: true,
           },
         },
+        orderBoxes: {
+          include: {
+            boxDocuments: true,
+          },
+          orderBy: { boxNumber: 'asc' },
+        },
+        shippingScenario: true,
       },
     });
 

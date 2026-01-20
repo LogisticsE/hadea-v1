@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db/prisma';
+import { prisma } from '@/lib/db';
 import {
   generateOutboundContentLabel,
   generateSampleContentLabel,
@@ -187,7 +187,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
 
     // Return the PDF as a download
-    return new NextResponse(generatedDoc.fileBuffer, {
+    const buffer = Buffer.from(generatedDoc.fileBuffer);
+    return new NextResponse(buffer, {
       status: 200,
       headers: {
         'Content-Type': generatedDoc.mimeType,

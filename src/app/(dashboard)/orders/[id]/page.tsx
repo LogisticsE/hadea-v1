@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Package, MapPin, FlaskConical, Calendar, Truck, FileText, Box, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, FlaskConical, Calendar, Truck, FileText, Box, CheckCircle2, XCircle, Clock, Plus, Download, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/date-utils';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/lib/constants/order-status';
 
@@ -18,6 +18,8 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [creatingBox, setCreatingBox] = useState(false);
+  const [generatingLabel, setGeneratingLabel] = useState<string | null>(null);
 
   useEffect(() => {
     if (orderId) {
@@ -87,6 +89,72 @@ export default function OrderDetailPage() {
 
   const outboundShipment = order.shipments?.find((s: any) => s.type === 'OUTBOUND');
   const sampleShipment = order.shipments?.find((s: any) => s.type === 'SAMPLE');
+
+  // Create a new box for the order
+  const createBox = async () => {
+    try {
+      setCreatingBox(true);
+      const response = await fetch(`/api/orders/${orderId}/boxes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create box');
+      }
+
+      // Refresh order data to show new box
+      await fetchOrder();
+    } catch (error: any) {
+      console.error('Error creating box:', error);
+      alert(error.message || 'Failed to create box');
+    } finally {
+      setCreatingBox(false);
+    }
+  };
+
+  // Generate and download a label
+  const generateLabel = async (boxId: string, labelType: 'OUTBOUND_CONTENT' | 'SAMPLE_CONTENT') => {
+    try {
+      setGeneratingLabel(`${boxId}-${labelType}`);
+      const response = await fetch(`/api/boxes/${boxId}/generate-label`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ labelType }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to generate label');
+      }
+
+      // Get the filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filenameMatch = contentDisposition?.match(/filename="([^"]+)"/);
+      const filename = filenameMatch ? filenameMatch[1] : `label-${labelType.toLowerCase()}.pdf`;
+
+      // Download the PDF
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      // Refresh order data to update label status
+      await fetchOrder();
+    } catch (error: any) {
+      console.error('Error generating label:', error);
+      alert(error.message || 'Failed to generate label');
+    } finally {
+      setGeneratingLabel(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -281,6 +349,123 @@ export default function OrderDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Box Labels Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Box Content Labels
+            </CardTitle>
+            <Button
+              onClick={createBox}
+              disabled={creatingBox}
+              size="sm"
+            >
+              {creatingBox ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Plus className="h-4 w-4 mr-2" />
+              )}
+              Add Box
+            </Button>
+          </div>
+          <CardDescription>
+            Generate and download box content labels for outbound and sample shipments
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {(!order.orderBoxes || order.orderBoxes.length === 0) ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Box className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No boxes created yet.</p>
+              <p className="text-sm">Click &quot;Add Box&quot; to create a box and generate labels.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {order.orderBoxes.map((box: any) => (
+                <div key={box.id} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="font-semibold">Box {box.boxNumber}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Status: {box.status}
+                      </p>
+                    </div>
+                    <Badge variant="outline">
+                      {box.boxNumber} of {order.orderBoxes.length}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Outbound Waybill</p>
+                      <p className="font-medium">{box.outboundWaybill || 'Not assigned'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Sample Waybill</p>
+                      <p className="font-medium">{box.sampleWaybill || 'Not assigned'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateLabel(box.id, 'OUTBOUND_CONTENT')}
+                      disabled={generatingLabel === `${box.id}-OUTBOUND_CONTENT`}
+                    >
+                      {generatingLabel === `${box.id}-OUTBOUND_CONTENT` ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      Outbound Label
+                      {box.boxContentGeneratedOutbound && (
+                        <CheckCircle2 className="h-4 w-4 ml-2 text-green-600" />
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateLabel(box.id, 'SAMPLE_CONTENT')}
+                      disabled={generatingLabel === `${box.id}-SAMPLE_CONTENT`}
+                    >
+                      {generatingLabel === `${box.id}-SAMPLE_CONTENT` ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      Sample Label
+                      {box.boxContentGeneratedSample && (
+                        <CheckCircle2 className="h-4 w-4 ml-2 text-green-600" />
+                      )}
+                    </Button>
+                  </div>
+
+                  {box.boxDocuments && box.boxDocuments.length > 0 && (
+                    <div className="mt-4 pt-4 border-t">
+                      <p className="text-sm font-medium mb-2">Generated Documents</p>
+                      <div className="space-y-1">
+                        {box.boxDocuments.map((doc: any) => (
+                          <div key={doc.id} className="flex justify-between text-sm">
+                            <span>{doc.fileName}</span>
+                            <span className="text-muted-foreground">
+                              {formatDate(doc.generatedAt, 'PPp')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Shipments */}
       {(outboundShipment || sampleShipment) && (
